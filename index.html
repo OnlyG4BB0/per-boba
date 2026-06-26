@@ -1,0 +1,1029 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<title>Per Boba ♥</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml"/>
+<link rel="apple-touch-icon" href="favicon.svg"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400;1,600&family=Raleway:wght@200;300;400&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+
+:root{
+  --ink:    #08060e;
+  --rouge:  #8B1A2F;
+  --petal:  #c8536a;
+  --blush:  #e8a0b0;
+  --gold:   #c9a84c;
+  --cream:  #f5ede8;
+  --muted:  #9a8a90;
+  --stem:   #2a4a18;
+}
+
+html{
+  scroll-behavior:auto;
+  -webkit-text-size-adjust:100%;
+  text-size-adjust:100%;
+  scrollbar-width:none;
+  -ms-overflow-style:none;
+}
+html::-webkit-scrollbar{display:none}
+
+body{
+  background:var(--ink);
+  color:var(--cream);
+  font-family:'Raleway',sans-serif;
+  font-weight:300;
+  overflow-x:hidden;
+  padding-left:env(safe-area-inset-left);
+  padding-right:env(safe-area-inset-right);
+  scrollbar-width:none;
+  -ms-overflow-style:none;
+}
+body::-webkit-scrollbar{display:none}
+
+/* ─── STICKY CANVAS WRAPPER ─── */
+#scene-wrapper{
+  position:relative;
+  /* tall enough to give scroll room for the full bloom */
+  height:600vh;
+}
+
+#sticky-scene{
+  position:sticky;
+  top:0;
+  height:100vh;
+  height:100dvh;
+  width:100%;
+  overflow:hidden;
+  touch-action:pan-y;
+}
+
+#rose-canvas{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+}
+
+/* ─── SCROLL TEXT LAYERS ─── */
+/* Each .text-layer is absolutely positioned within #scene-wrapper,
+   at the scroll depth where it should be visible */
+.text-layer{
+  position:absolute;
+  left:0;right:0;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  padding:
+    max(12px, env(safe-area-inset-top))
+    max(20px, env(safe-area-inset-right))
+    max(12px, env(safe-area-inset-bottom))
+    max(20px, env(safe-area-inset-left));
+  pointer-events:none;
+  opacity:0;
+  transition:opacity .6s ease, transform .6s ease;
+  transform:translateY(18px);
+  max-width:100%;
+}
+.text-layer.show{
+  opacity:1;
+  transform:translateY(0);
+}
+
+/* position each layer in the sticky viewport via top offset within wrapper */
+/* will be set by JS dynamically so they appear at correct scroll moment */
+
+.eyebrow{
+  font-family:'Raleway',sans-serif;
+  font-size:.65rem;
+  font-weight:400;
+  letter-spacing:.45em;
+  text-transform:uppercase;
+  color:var(--gold);
+  margin-bottom:20px;
+}
+.big-title{
+  font-family:'Cormorant Garamond',serif;
+  font-size:clamp(3.5rem,11vw,9rem);
+  font-weight:300;
+  line-height:.92;
+  color:var(--cream);
+}
+.big-title em{color:var(--blush);font-style:italic}
+.subtitle{
+  font-family:'Cormorant Garamond',serif;
+  font-size:clamp(1rem,2.5vw,1.45rem);
+  font-style:italic;
+  font-weight:300;
+  color:var(--muted);
+  margin-top:22px;
+  max-width:460px;
+  line-height:1.65;
+}
+.scroll-nudge{
+  margin-top:40px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:10px;
+}
+.scroll-nudge span{
+  font-size:.58rem;
+  letter-spacing:.35em;
+  text-transform:uppercase;
+  color:var(--muted);
+}
+.scroll-line{
+  width:1px;height:50px;
+  background:linear-gradient(to bottom,var(--gold),transparent);
+  animation:linePulse 2s ease-in-out infinite;
+}
+@keyframes linePulse{0%,100%{opacity:.4}50%{opacity:1}}
+
+.quote-text{
+  font-family:'Cormorant Garamond',serif;
+  font-size:clamp(1.4rem,4vw,2.6rem);
+  font-weight:300;
+  font-style:italic;
+  color:var(--cream);
+  max-width:600px;
+  line-height:1.5;
+}
+.quote-attr{
+  font-size:.65rem;
+  letter-spacing:.3em;
+  text-transform:uppercase;
+  color:var(--gold);
+  margin-top:20px;
+}
+
+/* ─── SECTIONS BELOW THE STICKY ─── */
+.content-section{
+  position:relative;
+  z-index:10;
+  background:var(--ink);
+  padding:120px 24px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:64px;
+}
+.content-section::before{
+  content:'';
+  position:absolute;
+  top:0;left:0;right:0;
+  height:160px;
+  background:linear-gradient(to bottom,transparent,var(--ink));
+  pointer-events:none;
+}
+
+/* divider */
+.divider{
+  width:80px;height:1px;
+  background:linear-gradient(to right,transparent,var(--gold),transparent);
+}
+
+/* letter */
+.letter-wrap{max-width:640px;width:100%}
+.letter-greeting{
+  font-family:'Cormorant Garamond',serif;
+  font-size:clamp(2.2rem,6vw,4.5rem);
+  font-weight:300;
+  color:var(--cream);
+  line-height:1.05;
+  margin-bottom:40px;
+}
+.letter-greeting em{color:var(--blush);font-style:italic}
+
+.letter-body{
+  font-family:'Cormorant Garamond',serif;
+  font-size:clamp(1rem,2vw,1.22rem);
+  font-weight:300;
+  color:var(--muted);
+  line-height:1.95;
+}
+.letter-body p{margin-bottom:1.5em}
+.letter-body strong{color:var(--cream);font-weight:400}
+
+.letter-sig{
+  font-family:'Cormorant Garamond',serif;
+  font-size:1.35rem;
+  font-style:italic;
+  color:var(--gold);
+  margin-top:44px;
+}
+
+/* reasons grid */
+.reasons-title{
+  font-family:'Cormorant Garamond',serif;
+  font-size:clamp(1.8rem,5vw,3.2rem);
+  font-weight:300;
+  text-align:center;
+  color:var(--cream);
+  line-height:1.15;
+}
+.reasons-title em{color:var(--blush);font-style:italic}
+
+.reasons-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+  gap:1px;
+  max-width:900px;
+  width:100%;
+  background:rgba(201,168,76,.07);
+  border:1px solid rgba(201,168,76,.07);
+}
+.reason-card{
+  padding:36px 28px;
+  background:var(--ink);
+  transition:background .35s;
+  cursor:default;
+}
+.reason-card:hover{background:#0f0a14}
+.r-num{
+  display:block;
+  font-family:'Cormorant Garamond',serif;
+  font-size:2.2rem;
+  font-style:italic;
+  color:rgba(201,168,76,.25);
+  line-height:1;
+  margin-bottom:14px;
+}
+.r-text{
+  font-family:'Cormorant Garamond',serif;
+  font-size:1.02rem;
+  font-weight:300;
+  color:var(--cream);
+  line-height:1.7;
+}
+
+/* finale */
+.finale-big{
+  font-family:'Cormorant Garamond',serif;
+  font-size:clamp(3rem,10vw,8rem);
+  font-weight:300;
+  line-height:.95;
+  text-align:center;
+  color:var(--cream);
+}
+.finale-big em{color:var(--blush);font-style:italic}
+
+.finale-sub{
+  font-family:'Cormorant Garamond',serif;
+  font-size:clamp(1rem,2.2vw,1.35rem);
+  font-style:italic;
+  color:var(--muted);
+  text-align:center;
+  max-width:420px;
+  line-height:1.7;
+}
+
+.heart-btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:12px;
+  padding:16px 40px;
+  min-height:48px;
+  border:1px solid rgba(201,168,76,.3);
+  background:transparent;
+  color:var(--gold);
+  font-family:'Raleway',sans-serif;
+  font-size:.68rem;
+  font-weight:400;
+  letter-spacing:.3em;
+  text-transform:uppercase;
+  cursor:pointer;
+  transition:border-color .3s, background .3s;
+  -webkit-tap-highlight-color:transparent;
+}
+.heart-btn:active{
+  border-color:rgba(201,168,76,.7);
+  background:rgba(201,168,76,.1);
+}
+.heart-btn:hover{
+  border-color:rgba(201,168,76,.7);
+  background:rgba(201,168,76,.06);
+}
+
+/* reveal on scroll for content sections */
+.reveal{
+  opacity:0;
+  transform:translateY(28px);
+  transition:opacity .9s ease, transform .9s ease;
+}
+.reveal.visible{opacity:1;transform:translateY(0)}
+
+/* counter strip */
+.counter-strip{
+  display:flex;gap:0;flex-wrap:wrap;justify-content:center;
+  border-top:1px solid rgba(201,168,76,.1);
+  border-bottom:1px solid rgba(201,168,76,.1);
+  width:100%;max-width:700px;
+}
+.c-item{
+  flex:1;min-width:120px;
+  text-align:center;
+  padding:36px 20px;
+  border-right:1px solid rgba(201,168,76,.1);
+}
+.c-item:last-child{border-right:none}
+.c-num{
+  display:block;
+  font-family:'Cormorant Garamond',serif;
+  font-size:clamp(2.8rem,7vw,5rem);
+  font-weight:300;
+  color:var(--cream);
+  line-height:1;
+}
+.c-unit{
+  display:block;
+  font-size:.58rem;
+  letter-spacing:.35em;
+  text-transform:uppercase;
+  color:var(--muted);
+  margin-top:8px;
+}
+
+@media(max-width:900px){
+  #scene-wrapper{height:540vh}
+  .content-section{padding:88px 20px;gap:52px}
+  .reason-card{padding:28px 22px}
+}
+
+@media(max-width:768px){
+  #scene-wrapper{height:500vh}
+
+  /* titolo in basso, citazioni in alto — la rosa resta al centro */
+  #layer-0{
+    justify-content:flex-end;
+    padding-bottom:max(11vh, calc(env(safe-area-inset-bottom) + 48px));
+  }
+  #layer-1,#layer-2,#layer-3,#layer-4{
+    justify-content:flex-start;
+    padding-top:max(68px, calc(env(safe-area-inset-top) + 52px));
+  }
+
+  .eyebrow{
+    letter-spacing:.28em;
+    font-size:.58rem;
+    margin-bottom:14px;
+  }
+  .big-title{font-size:clamp(2.6rem,13vw,4.2rem)}
+  .subtitle{
+    margin-top:16px;
+    max-width:92vw;
+    font-size:clamp(.95rem,3.8vw,1.2rem);
+  }
+  .scroll-nudge{margin-top:28px}
+  .scroll-nudge span{letter-spacing:.22em;font-size:.52rem}
+  .scroll-line{height:36px}
+
+  .quote-text{
+    font-size:clamp(1.1rem,5vw,1.65rem);
+    max-width:92vw;
+    line-height:1.42;
+    text-wrap:balance;
+  }
+  .quote-attr{letter-spacing:.22em;margin-top:14px}
+
+  .content-section{padding:72px 18px;gap:44px}
+  .content-section::before{height:100px}
+  .letter-greeting{margin-bottom:28px}
+  .letter-body{line-height:1.85}
+  .letter-sig{margin-top:32px;font-size:1.2rem}
+  .finale-big{font-size:clamp(2.4rem,12vw,4rem)}
+  .finale-sub{max-width:92vw}
+
+  .counter-strip{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    max-width:100%;
+  }
+  .c-item{
+    flex:none;
+    min-width:0;
+    padding:24px 12px;
+    border-right:none;
+    border-bottom:1px solid rgba(201,168,76,.1);
+  }
+  .c-item:nth-child(odd){border-right:1px solid rgba(201,168,76,.1)}
+  .c-item:nth-last-child(-n+2){border-bottom:none}
+  .c-num{font-size:clamp(2rem,9vw,3.2rem)}
+  .c-unit{letter-spacing:.22em;font-size:.52rem}
+
+  .heart-btn{
+    width:min(100%, 320px);
+    padding:14px 24px;
+    letter-spacing:.22em;
+  }
+}
+
+@media(max-width:600px){
+  .reasons-grid{grid-template-columns:1fr}
+  .r-text{font-size:.98rem}
+}
+
+@media(max-width:380px){
+  #scene-wrapper{height:460vh}
+  .big-title{font-size:clamp(2.25rem,12vw,3rem)}
+  .quote-text{font-size:1.05rem}
+  .counter-strip{grid-template-columns:1fr}
+  .c-item{border-right:none!important}
+  .c-item:not(:last-child){border-bottom:1px solid rgba(201,168,76,.1)}
+  .c-item:last-child{border-bottom:none}
+}
+
+@media(hover:none){
+  .reason-card:hover{background:var(--ink)}
+  .heart-btn:hover{
+    border-color:rgba(201,168,76,.3);
+    background:transparent;
+  }
+}
+
+@media(prefers-reduced-motion:reduce){
+  *{animation-duration:.01ms!important;transition-duration:.01ms!important}
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════
+     STICKY SCROLL SCENE
+════════════════════════════════════ -->
+<div id="scene-wrapper">
+  <div id="sticky-scene">
+    <canvas id="rose-canvas"></canvas>
+
+    <!-- Layer 0 – initial title (0–15% scroll) -->
+    <div class="text-layer" id="layer-0" style="top:0;height:100vh">
+      <p class="eyebrow">Otto mesi insieme</p>
+      <h1 class="big-title">Per<br/><em>Boba</em></h1>
+      <p class="subtitle">con tutto il mio cuore</p>
+      <div class="scroll-nudge">
+        <span>Scorri per far sbocciare</span>
+        <div class="scroll-line"></div>
+      </div>
+    </div>
+
+    <!-- Layer 1 – bocciolo (15–35%) -->
+    <div class="text-layer" id="layer-1" style="top:0;height:100vh">
+      <p class="eyebrow">All'inizio</p>
+      <p class="quote-text">"Come un bocciolo che aspetta<br/>il momento giusto per aprirsi."</p>
+    </div>
+
+    <!-- Layer 2 – prima apertura (35–55%) -->
+    <div class="text-layer" id="layer-2" style="top:0;height:100vh">
+      <p class="eyebrow">Poi ti ho conosciuta</p>
+      <p class="quote-text">"E tutto ha cominciato<br/>ad avere senso."</p>
+    </div>
+
+    <!-- Layer 3 – fioritura (55–75%) -->
+    <div class="text-layer" id="layer-3" style="top:0;height:100vh">
+      <p class="eyebrow">Otto mesi fa</p>
+      <p class="quote-text">"Hai portato colore<br/>dove non sapevo<br/>che potesse esistere."</p>
+    </div>
+
+    <!-- Layer 4 – piena fioritura (75–100%) -->
+    <div class="text-layer" id="layer-4" style="top:0;height:100vh">
+      <p class="eyebrow">Oggi</p>
+      <p class="quote-text">"Sei la cosa più bella<br/>che mi sia capitata."</p>
+      <p class="quote-attr">— per sempre tuo</p>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════
+     CONTENT SECTIONS
+════════════════════════════════════ -->
+<div class="content-section">
+
+  <!-- Counter -->
+  <div class="counter-strip reveal">
+    <div class="c-item">
+      <span class="c-num">8</span>
+      <span class="c-unit">Mesi</span>
+    </div>
+    <div class="c-item">
+      <span class="c-num" id="cnt-days">244</span>
+      <span class="c-unit">Giorni</span>
+    </div>
+    <div class="c-item">
+      <span class="c-num" id="cnt-hrs">5856</span>
+      <span class="c-unit">Ore</span>
+    </div>
+    <div class="c-item">
+      <span class="c-num" id="cnt-min">351360</span>
+      <span class="c-unit">Minuti</span>
+    </div>
+  </div>
+
+  <div class="divider reveal"></div>
+
+  <!-- Letter -->
+  <div class="letter-wrap reveal">
+    <h2 class="letter-greeting">Cara<br/><em>Boba,</em></h2>
+    <div class="letter-body">
+      <p>Ci sono cose che non si riescono a dire ad alta voce — non perché le parole manchino, ma perché <strong>quello che provo per te è più grande di qualsiasi frase</strong> che potrei costruire.</p>
+      <p>Otto mesi fa ho incontrato qualcuno che ha reso il mondo un posto più luminoso. Qualcuno che ride in un modo che mi fa dimenticare tutto il rumore intorno. Qualcuno che, quando mi guarda, mi fa sentire esattamente nel posto giusto.</p>
+      <p><strong>Quello qualcuno sei tu.</strong></p>
+      <p>Ogni giorno insieme è stato un regalo — dai momenti grandi a quelli piccoli, a quelli stupidi che ci fanno ridere ancora adesso. È in quei dettagli che ti ho conosciuta davvero, ed è in quei dettagli che mi sono innamorato.</p>
+      <p>Grazie per essere esattamente chi sei. Non cambiare niente.</p>
+    </div>
+    <p class="letter-sig">Con amore infinito ♥</p>
+  </div>
+
+  <div class="divider reveal"></div>
+
+  <!-- Reasons -->
+  <h2 class="reasons-title reveal">9 cose che amo<br/><em>di te</em></h2>
+  <div class="reasons-grid">
+    <div class="reason-card reveal">
+      <span class="r-num">1</span>
+      <p class="r-text">La tua risata — quella vera, quella che non riesci a controllare — è la cosa più bella che conosco.</p>
+    </div>
+    <div class="reason-card reveal">
+      <span class="r-num">2</span>
+      <p class="r-text">Come ti prendi cura delle persone che ami, con una delicatezza che non ha niente di scontato.</p>
+    </div>
+    <div class="reason-card reveal">
+      <span class="r-num">3</span>
+      <p class="r-text">La tua curiosità — il modo in cui ti appassioni alle cose e le vivi completamente.</p>
+    </div>
+    <div class="reason-card reveal">
+      <span class="r-num">4</span>
+      <p class="r-text">La tua forza, anche nelle giornate in cui non te ne rendi conto nemmeno tu.</p>
+    </div>
+    <div class="reason-card reveal">
+      <span class="r-num">5</span>
+      <p class="r-text">Come mi fai sentire a casa anche nel mezzo del caos.</p>
+    </div>
+    <div class="reason-card reveal">
+      <span class="r-num">6</span>
+      <p class="r-text">I tuoi occhi quando parli di qualcosa che ti emoziona davvero.</p>
+    </div>
+    <div class="reason-card reveal">
+      <span class="r-num">7</span>
+      <p class="r-text">Che sei sincera, anche quando è difficile — e questo vale più di tutto.</p>
+    </div>
+    <div class="reason-card reveal">
+      <span class="r-num">8</span>
+      <p class="r-text">Semplicemente: che esisti, e che hai scelto di essere qui con me.</p>
+    </div>
+    <div class="reason-card reveal">
+      <span class="r-num">9</span>
+      <p class="r-text">Il modo in cui mi guardi — come se fossi esattamente dove devo essere.</p>
+    </div>
+  </div>
+
+  <div class="divider reveal"></div>
+
+  <!-- Finale -->
+  <h2 class="finale-big reveal"><em>Boba</em><br/>ti amo.</h2>
+  <p class="finale-sub reveal">Ad altri otto mesi, e a tutti quelli che vengono dopo.</p>
+  <button class="heart-btn reveal" id="heart-btn" onclick="burstHearts()">♥ &nbsp;Manda un abbraccio</button>
+
+</div>
+
+<!-- Three.js + modello rosa (ispirato a codepen.io/wakana-k/pen/LYgREZb) -->
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.150.1/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.150.1/examples/jsm/"
+  }
+}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
+
+// ═══════════════════════════════════════════════════════════
+//  ROSE BLOOM — modello 3D + scroll-driven animation
+//  Modello: red_rose3.obj (archive3d, CC0) — come CodePen LYgREZb
+// ═══════════════════════════════════════════════════════════
+
+const ROSE_OBJ_URL = 'red_rose3.obj'; // locale; fallback CDN come nel CodePen
+
+const canvas = document.getElementById('rose-canvas');
+const W = () => canvas.clientWidth;
+const H = () => canvas.clientHeight;
+
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setClearColor(0x000000, 0);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.shadowMap.enabled = true;
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(38, 1, 0.01, 200);
+const CAMERA_DESKTOP = { x: 0, y: 0.48, z: 4.8, lookY: 0.78, fov: 38 };
+const CAMERA_MOBILE  = { x: 0, y: 0.44, z: 6.2, lookY: 0.72, fov: 44 };
+
+function isMobileViewport() {
+  return W() < 768 || W() / Math.max(H(), 1) < 0.72;
+}
+
+function updateCameraLayout() {
+  const cfg = isMobileViewport() ? CAMERA_MOBILE : CAMERA_DESKTOP;
+  camera.fov = cfg.fov;
+  camera.position.set(cfg.x, cfg.y, cfg.z);
+  camera.lookAt(0, cfg.lookY, 0);
+}
+
+function resize() {
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, isMobileViewport() ? 1.5 : 2));
+  renderer.setSize(W(), H(), false);
+  camera.aspect = W() / H();
+  updateCameraLayout();
+  camera.updateProjectionMatrix();
+}
+
+// ── Lights (ottimizzate per MeshStandardMaterial) ───────────
+scene.add(new THREE.AmbientLight(0xfdf6ec, 0.45));
+
+const key = new THREE.DirectionalLight(0xffe0ec, 1.8);
+key.position.set(-2, 4, 5);
+scene.add(key);
+
+const fill = new THREE.DirectionalLight(0xd4a0b0, 0.9);
+fill.position.set(4, 1, 2);
+scene.add(fill);
+
+const rim = new THREE.DirectionalLight(0x8b1a2f, 0.55);
+rim.position.set(0, -1, -4);
+scene.add(rim);
+
+const point = new THREE.PointLight(0xc8536a, 1.1, 10);
+point.position.set(0, 2, 3);
+scene.add(point);
+
+camera.add(new THREE.PointLight(0xffffff, 0.35, 12));
+scene.add(camera);
+
+// ── Materials (stile CodePen, colori della pagina) ───────────
+function rosePartMaterial(color, opacity = 1) {
+  return new THREE.MeshStandardMaterial({
+    color,
+    metalness: 0,
+    roughness: 0.78,
+    side: THREE.DoubleSide,
+    transparent: opacity < 1,
+    opacity,
+  });
+}
+
+const stemMat = new THREE.MeshStandardMaterial({ color: 0x2a4a18, roughness: 0.9, metalness: 0 });
+const neckMat = new THREE.MeshStandardMaterial({ color: 0x001a14, roughness: 0.88, metalness: 0 });
+
+// ── Scene graph ─────────────────────────────────────────────
+const roseGroup = new THREE.Group();
+scene.add(roseGroup);
+
+resize();
+window.addEventListener('resize', resize);
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', resize);
+  window.visualViewport.addEventListener('scroll', resize);
+}
+
+const STEM_H = 2.2;
+const STEM_TOP_Y = -1.1 + STEM_H;
+const STEM_ATTACH_OVERLAP = 0.06;
+const FLOWER_Y_LIFT = 0.08;
+
+// Stelo procedurale — più largo in cima per unirsi al fiore
+const stemGeo = new THREE.CylinderGeometry(0.034, 0.022, STEM_H, 12);
+stemGeo.translate(0, STEM_H / 2, 0);
+const stem = new THREE.Mesh(stemGeo, stemMat);
+stem.scale.y = 0;
+stem.position.y = -1.1;
+stem.material.transparent = true;
+stem.material.opacity = 0;
+roseGroup.add(stem);
+
+// Collo / peduncolo — corto, resta sotto il calice
+const neckGeo = new THREE.CylinderGeometry(0.052, 0.036, 0.1, 12);
+neckGeo.translate(0, 0.05, 0);
+const neck = new THREE.Mesh(neckGeo, neckMat.clone());
+neck.position.y = STEM_TOP_Y - 0.03;
+neck.scale.y = 0;
+neck.material.transparent = true;
+neck.material.opacity = 0;
+roseGroup.add(neck);
+
+// Giunzione sferica che riempie il passaggio stelo → calice
+const joint = new THREE.Mesh(
+  new THREE.SphereGeometry(0.056, 12, 10),
+  neckMat.clone(),
+);
+joint.scale.set(1, 0.65, 1);
+joint.position.y = STEM_TOP_Y + 0.01;
+joint.scale.setScalar(0);
+joint.material.transparent = true;
+joint.material.opacity = 0;
+roseGroup.add(joint);
+
+// Spine sullo stelo
+const thorns = [];
+function thornGeometry() {
+  const geo = new THREE.ConeGeometry(0.018, 0.07, 5);
+  geo.rotateZ(Math.PI / 2);
+  geo.translate(0.035, 0, 0);
+  return geo;
+}
+[
+  { yPos: 0.18, side: 1,  ry: 0.3 },
+  { yPos: 0.42, side: -1, ry: -0.5 },
+  { yPos: 0.68, side: 1,  ry: 0.8 },
+].forEach(cfg => {
+  const tm = stemMat.clone();
+  tm.transparent = true;
+  tm.opacity = 0;
+  const thorn = new THREE.Mesh(thornGeometry(), tm);
+  thorn.position.set(cfg.side * 0.03, -1.1 + cfg.yPos * STEM_H, 0);
+  thorn.rotation.y = cfg.ry;
+  thorn.rotation.z = cfg.side * 0.9;
+  thorn.scale.set(0, 0, 0);
+  roseGroup.add(thorn);
+  thorns.push(thorn);
+});
+
+// Gruppo modello 3D (rosa + calice + foglia)
+const flowerGroup = new THREE.Group();
+flowerGroup.rotation.y = Math.PI / 1.7;
+roseGroup.add(flowerGroup);
+
+const modelParts = { rose: null, calyx: null, leaves: [] };
+let modelReady = false;
+
+// ── Carica modello OBJ ──────────────────────────────────────
+function setupRoseModel(object) {
+  object.traverse((child) => {
+    if (!child.isMesh) return;
+
+    let color = 0xc8536a;
+    if (child.name === 'calyx') color = 0x001a14;
+    else if (child.name === 'leaf1' || child.name === 'leaf2') color = 0x00331b;
+
+    child.material = rosePartMaterial(color, 0);
+    child.castShadow = true;
+    child.receiveShadow = true;
+
+    if (child.name === 'rose') modelParts.rose = child;
+    else if (child.name === 'calyx') modelParts.calyx = child;
+    else if (child.name === 'leaf1' || child.name === 'leaf2') modelParts.leaves.push(child);
+  });
+
+  const box = new THREE.Box3().setFromObject(object);
+  const center = box.getCenter(new THREE.Vector3());
+  const size = box.getSize(new THREE.Vector3());
+  object.position.sub(center);
+
+  flowerGroup.add(object);
+
+  const maxDim = Math.max(size.x, size.y, size.z);
+  flowerGroup.scale.setScalar(1.35 / maxDim);
+
+  if (modelParts.calyx) {
+    modelParts.calyx.updateWorldMatrix(true, true);
+    const calyxBox = new THREE.Box3().setFromObject(modelParts.calyx);
+    const calyxSize = calyxBox.getSize(new THREE.Vector3());
+    modelParts.calyx.userData.baseY = modelParts.calyx.position.y;
+    modelParts.calyx.userData.height = calyxSize.y;
+  }
+
+  alignFlowerToStem();
+
+  modelReady = true;
+  updateCameraLayout();
+  camera.updateProjectionMatrix();
+  applyBloom(lastScrollP >= 0 ? lastScrollP : 0);
+}
+
+function alignFlowerToStem() {
+  // Misura dal basso del calice con flowerGroup.y = 0 per evitare drift ad ogni scroll
+  flowerGroup.position.y = 0;
+  flowerGroup.updateMatrixWorld(true);
+
+  let attachBottomY;
+  if (modelParts.calyx) {
+    attachBottomY = new THREE.Box3().setFromObject(modelParts.calyx).min.y;
+  } else {
+    attachBottomY = new THREE.Box3().setFromObject(flowerGroup).min.y;
+  }
+
+  flowerGroup.position.y = STEM_TOP_Y - attachBottomY - STEM_ATTACH_OVERLAP + FLOWER_Y_LIFT;
+}
+
+const objLoader = new OBJLoader();
+objLoader.load(ROSE_OBJ_URL, setupRoseModel, undefined, () => {
+  objLoader.load(
+    'https://happy358.github.io/Images/Model/red_rose3.obj',
+    setupRoseModel,
+    undefined,
+    (err) => console.error('Errore caricamento rosa:', err),
+  );
+});
+
+// Particelle dorate
+const DUST = 180;
+const dustGeo = new THREE.BufferGeometry();
+const dPos = new Float32Array(DUST * 3);
+const dVel = [];
+for (let i = 0; i < DUST; i++) {
+  dPos[i * 3]     = (Math.random() - 0.5) * 6;
+  dPos[i * 3 + 1] = (Math.random() - 0.5) * 5 + 1;
+  dPos[i * 3 + 2] = (Math.random() - 0.5) * 4;
+  dVel.push({ x: (Math.random() - 0.5) * 0.003, y: -(0.003 + Math.random() * 0.005) });
+}
+dustGeo.setAttribute('position', new THREE.BufferAttribute(dPos, 3));
+const dustMat = new THREE.PointsMaterial({
+  color: 0xd4a853, size: 0.032, transparent: true, opacity: 0, sizeAttenuation: true,
+});
+const dust = new THREE.Points(dustGeo, dustMat);
+scene.add(dust);
+
+// ═══════════════════════════════════════════════════════════
+//  SCROLL DRIVER
+// ═══════════════════════════════════════════════════════════
+function getScrollProgress() {
+  const wrapper = document.getElementById('scene-wrapper');
+  const wh = window.innerHeight;
+  const rect = wrapper.getBoundingClientRect();
+  const total = wrapper.offsetHeight - wh;
+  const gone = -rect.top;
+  return Math.max(0, Math.min(1, gone / total));
+}
+
+function easeInOut(t) { return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t; }
+function easeOutBack(t) {
+  const c1 = 1.70158;
+  const c3 = c1 + 1;
+  return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
+}
+function clamp01(v) { return Math.max(0, Math.min(1, v)); }
+function mapRange(v, a, b) { return clamp01((v - a) / (b - a)); }
+
+const layers = [
+  document.getElementById('layer-0'),
+  document.getElementById('layer-1'),
+  document.getElementById('layer-2'),
+  document.getElementById('layer-3'),
+  document.getElementById('layer-4'),
+];
+const layerWindows = [
+  [0.00, 0.14], [0.14, 0.34], [0.34, 0.55], [0.55, 0.76], [0.76, 1.01],
+];
+
+function updateLayers(p) {
+  layerWindows.forEach(([a, b], idx) => {
+    layers[idx].classList.toggle('show', p >= a && p < b);
+  });
+}
+
+function setMeshOpacity(mesh, opacity) {
+  if (!mesh) return;
+  mesh.material.opacity = opacity;
+  mesh.material.transparent = opacity < 1;
+  mesh.visible = opacity > 0.01;
+}
+
+function applyBloom(p) {
+  // Stelo
+  const stemP = easeInOut(mapRange(p, 0, 0.30));
+  stem.scale.y = stemP;
+  stem.material.opacity = stemP > 0.01 ? 1 : 0;
+
+  // Collo e giunzione — crescono con lo stelo
+  const neckP = easeInOut(mapRange(p, 0.15, 0.34));
+  neck.scale.y = neckP;
+  neck.material.opacity = neckP > 0.01 ? 1 : 0;
+  joint.scale.set(neckP, neckP * 0.72, neckP);
+  joint.material.opacity = neckP > 0.01 ? 1 : 0;
+
+  // Spine
+  const thornP = easeInOut(mapRange(p, 0.22, 0.42));
+  thorns.forEach(t => {
+    t.scale.setScalar(thornP);
+    t.material.opacity = thornP;
+  });
+
+  if (!modelReady) return;
+
+  // Calice (appare prima del bocciolo, ancorato in basso)
+  const calyxP = easeInOut(mapRange(p, 0.18, 0.36));
+  if (modelParts.calyx) {
+    const s = 0.2 + calyxP * 0.8;
+    modelParts.calyx.scale.set(s, s, s);
+    const h = modelParts.calyx.userData.height || 0.08;
+    const baseY = modelParts.calyx.userData.baseY || 0;
+    modelParts.calyx.position.y = baseY + (1 - s) * h * 0.48;
+    setMeshOpacity(modelParts.calyx, calyxP);
+    alignFlowerToStem();
+  }
+
+  // Rosa: da bocciolo chiuso a fioritura piena (come sbocciare)
+  const roseP = easeOutBack(mapRange(p, 0.28, 0.88));
+  if (modelParts.rose) {
+    const bud = 1 - roseP;
+    const sx = 0.12 + roseP * 0.88 + bud * 0.08;
+    const sy = 0.18 + roseP * 0.82 + bud * 0.35;
+    const sz = 0.12 + roseP * 0.88 + bud * 0.08;
+    modelParts.rose.scale.set(sx, sy, sz);
+    modelParts.rose.rotation.x = bud * 0.35;
+    setMeshOpacity(modelParts.rose, easeInOut(mapRange(p, 0.26, 0.40)) * 0.25 + roseP * 0.75);
+  }
+
+  // Foglie del modello
+  modelParts.leaves.forEach((leaf, i) => {
+    const leafP = easeInOut(mapRange(p, 0.25 + i * 0.05, 0.50 + i * 0.05));
+    leaf.scale.setScalar(0.15 + leafP * 0.85);
+    setMeshOpacity(leaf, leafP);
+  });
+
+  // Polvere dorata nella fase finale
+  dust.material.opacity = easeInOut(mapRange(p, 0.5, 0.9)) * 0.45;
+
+  // Rotazione dolce durante lo scroll
+  roseGroup.rotation.y = p * Math.PI * 0.4;
+}
+
+// ═══════════════════════════════════════════════════════════
+//  RENDER LOOP
+// ═══════════════════════════════════════════════════════════
+const clock = new THREE.Clock();
+let lastScrollP = -1;
+
+function animate() {
+  requestAnimationFrame(animate);
+  const t = clock.getElapsedTime();
+
+  const p = getScrollProgress();
+  if (Math.abs(p - lastScrollP) > 0.0005) {
+    applyBloom(p);
+    updateLayers(p);
+    lastScrollP = p;
+  }
+
+  roseGroup.rotation.z = Math.sin(t * 0.45) * 0.025;
+  point.intensity = 1.0 + Math.sin(t * 1.3) * 0.25;
+
+  const dp = dustGeo.attributes.position.array;
+  for (let i = 0; i < DUST; i++) {
+    dp[i * 3]     += dVel[i].x;
+    dp[i * 3 + 1] += dVel[i].y;
+    if (dp[i * 3 + 1] < -3) dp[i * 3 + 1] = 4;
+  }
+  dustGeo.attributes.position.needsUpdate = true;
+
+  renderer.render(scene, camera);
+}
+animate();
+
+layers[0].classList.add('show');
+applyBloom(0);
+
+// Scroll reveal
+const revealEls = document.querySelectorAll('.reveal');
+const ro = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) { e.target.classList.add('visible'); ro.unobserve(e.target); }
+  });
+}, { threshold: 0.12 });
+revealEls.forEach(el => ro.observe(el));
+
+// Heart burst (onclick nel HTML)
+window.burstHearts = function burstHearts() {
+  const btn = document.getElementById('heart-btn');
+  const r = btn.getBoundingClientRect();
+  const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+  for (let i = 0; i < 26; i++) {
+    const h = document.createElement('div');
+    h.textContent = '♥';
+    const s = 14 + Math.random() * 20;
+    Object.assign(h.style, {
+      position: 'fixed', left: cx + 'px', top: cy + 'px',
+      fontSize: s + 'px', lineHeight: 1,
+      color: `hsl(${338 + Math.random() * 22},65%,${60 + Math.random() * 20}%)`,
+      pointerEvents: 'none', zIndex: 9999, userSelect: 'none',
+    });
+    document.body.appendChild(h);
+    const ang = Math.random() * Math.PI * 2, dist = 90 + Math.random() * 170;
+    const tx = Math.cos(ang) * dist, ty = Math.sin(ang) * dist - 70, dur = 800 + Math.random() * 700;
+    h.animate([
+      { transform: 'translate(-50%,-50%) scale(0.2)', opacity: 1 },
+      { transform: `translate(calc(-50% + ${tx}px),calc(-50% + ${ty}px)) scale(1.3)`, opacity: 0.9, offset: 0.55 },
+      { transform: `translate(calc(-50% + ${tx * 1.1}px),calc(-50% + ${ty + 50}px)) scale(.5)`, opacity: 0 },
+    ], { duration: dur, easing: 'cubic-bezier(.22,1,.36,1)', fill: 'forwards' }).onfinish = () => h.remove();
+  }
+};
+
+window.applyBloom = applyBloom;
+</script>
+</body>
+</html>
