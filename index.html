@@ -205,9 +205,9 @@ body::-webkit-scrollbar{display:none}
   flex-direction:column;
   align-items:center;
   gap:64px;
-  overflow:hidden;
+  overflow-x:hidden;
 }
-.content-section > *{position:relative;z-index:1}
+.content-section > *:not(.ambient){position:relative;z-index:1}
 .content-section::before{
   content:'';
   position:absolute;
@@ -215,7 +215,7 @@ body::-webkit-scrollbar{display:none}
   height:160px;
   background:linear-gradient(to bottom,transparent,var(--ink));
   pointer-events:none;
-  z-index:2;
+  z-index:0;
 }
 .ambient{
   position:absolute;
@@ -230,12 +230,12 @@ body::-webkit-scrollbar{display:none}
   opacity:0;
   animation:ambientDrift linear infinite;
 }
-.ambient i:nth-child(1){left:8%;top:12%;font-size:10px;color:rgba(232,160,176,.2);animation-duration:22s;animation-delay:0s}
-.ambient i:nth-child(2){left:82%;top:18%;font-size:14px;color:rgba(201,168,76,.15);animation-duration:28s;animation-delay:-4s}
-.ambient i:nth-child(3){left:22%;top:42%;font-size:8px;color:rgba(232,160,176,.18);animation-duration:19s;animation-delay:-8s}
-.ambient i:nth-child(4){left:68%;top:55%;font-size:12px;color:rgba(201,168,76,.12);animation-duration:25s;animation-delay:-2s}
-.ambient i:nth-child(5){left:45%;top:72%;font-size:9px;color:rgba(232,160,176,.16);animation-duration:21s;animation-delay:-11s}
-.ambient i:nth-child(6){left:90%;top:78%;font-size:11px;color:rgba(201,168,76,.14);animation-duration:24s;animation-delay:-6s}
+.ambient i:nth-child(1){left:8%;top:28%;font-size:10px;color:rgba(232,160,176,.2);animation-duration:22s;animation-delay:0s}
+.ambient i:nth-child(2){left:82%;top:32%;font-size:14px;color:rgba(201,168,76,.15);animation-duration:28s;animation-delay:-4s}
+.ambient i:nth-child(3){left:22%;top:52%;font-size:8px;color:rgba(232,160,176,.18);animation-duration:19s;animation-delay:-8s}
+.ambient i:nth-child(4){left:68%;top:62%;font-size:12px;color:rgba(201,168,76,.12);animation-duration:25s;animation-delay:-2s}
+.ambient i:nth-child(5){left:45%;top:78%;font-size:9px;color:rgba(232,160,176,.16);animation-duration:21s;animation-delay:-11s}
+.ambient i:nth-child(6){left:90%;top:88%;font-size:11px;color:rgba(201,168,76,.14);animation-duration:24s;animation-delay:-6s}
 @keyframes ambientDrift{
   0%{opacity:0;transform:translateY(0) translateX(0) rotate(0deg)}
   12%{opacity:1}
@@ -456,37 +456,42 @@ body::-webkit-scrollbar{display:none}
   transform:translateY(0) scale(1);
 }
 
-/* counter strip */
+/* counter strip — fade semplice, senza transform */
+.counter-fade{
+  opacity:0;
+  transition:opacity .85s ease;
+}
+.counter-fade.visible{opacity:1}
+.counter-strip.reveal,
+.counter-strip.reveal.visible{
+  transform:none;
+}
 .counter-strip{
   display:flex;gap:0;flex-wrap:wrap;justify-content:center;
   border-top:1px solid rgba(201,168,76,.1);
   border-bottom:1px solid rgba(201,168,76,.1);
   width:100%;max-width:700px;
+  background:var(--ink);
+  position:relative;
+  z-index:1;
 }
 .c-item{
   flex:1;min-width:120px;
   text-align:center;
   padding:36px 20px;
   border-right:1px solid rgba(201,168,76,.1);
-  opacity:0;
-  transform:translateY(20px);
-  transition:opacity .7s ease, transform .7s cubic-bezier(.22,1,.36,1);
+  background:var(--ink);
 }
-.c-item.visible{opacity:1;transform:none}
-.c-item:nth-child(1){transition-delay:.05s}
-.c-item:nth-child(2){transition-delay:.15s}
-.c-item:nth-child(3){transition-delay:.25s}
-.c-item:nth-child(4){transition-delay:.35s}
 .c-item:last-child{border-right:none}
-.counter-strip.visible .c-item{opacity:1;transform:none}
 .c-num{
   display:block;
   font-family:'Cormorant Garamond',serif;
   font-size:clamp(2.8rem,7vw,5rem);
   font-weight:300;
   color:var(--cream);
-  line-height:1;
-  font-variant-numeric:tabular-nums;
+  line-height:1.2;
+  padding:.06em 0;
+  min-height:1.2em;
 }
 .c-unit{
   display:block;
@@ -506,10 +511,10 @@ body::-webkit-scrollbar{display:none}
 @media(max-width:768px){
   #scene-wrapper{height:500vh}
 
-  /* titolo in basso, citazioni in alto — la rosa resta al centro */
+  /* titolo più alto, citazioni in alto — la rosa resta al centro */
   #layer-0{
     justify-content:flex-end;
-    padding-bottom:max(11vh, calc(env(safe-area-inset-bottom) + 48px));
+    padding-bottom:max(30vh, calc(env(safe-area-inset-bottom) + 96px));
   }
   #layer-1,#layer-2,#layer-3,#layer-4{
     justify-content:flex-start;
@@ -611,11 +616,11 @@ body::-webkit-scrollbar{display:none}
     filter:none;
   }
   .letter-body p{opacity:1;transform:none}
-  .c-item{opacity:1;transform:none}
   .letter-wrap .letter-greeting,
   .letter-wrap .letter-sig,
   .reason-card .r-text{opacity:1;transform:none;filter:none}
   .ambient i{opacity:0;animation:none}
+  .counter-fade{opacity:1}
 }
 </style>
 </head>
@@ -675,21 +680,21 @@ body::-webkit-scrollbar{display:none}
   </div>
 
   <!-- Counter -->
-  <div class="counter-strip reveal">
+  <div class="counter-strip counter-fade">
     <div class="c-item">
-      <span class="c-num" data-count="8">0</span>
+      <span class="c-num">8</span>
       <span class="c-unit">Mesi</span>
     </div>
     <div class="c-item">
-      <span class="c-num" data-count="244">0</span>
+      <span class="c-num">244</span>
       <span class="c-unit">Giorni</span>
     </div>
     <div class="c-item">
-      <span class="c-num" data-count="5856">0</span>
+      <span class="c-num">5.856</span>
       <span class="c-unit">Ore</span>
     </div>
     <div class="c-item">
-      <span class="c-num" data-count="351360">0</span>
+      <span class="c-num">351.360</span>
       <span class="c-unit">Minuti</span>
     </div>
   </div>
@@ -1162,41 +1167,28 @@ applyBloom(0);
 
 // Scroll reveal
 const revealEls = document.querySelectorAll('.reveal');
-const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
-
-function animateCount(el, target, duration = 1500) {
-  if (prefersReducedMotion.matches) {
-    el.textContent = target.toLocaleString('it-IT');
-    return;
-  }
-  const start = performance.now();
-  function tick(now) {
-    const t = Math.min((now - start) / duration, 1);
-    const eased = 1 - Math.pow(1 - t, 3);
-    el.textContent = Math.floor(target * eased).toLocaleString('it-IT');
-    if (t < 1) requestAnimationFrame(tick);
-    else el.textContent = target.toLocaleString('it-IT');
-  }
-  requestAnimationFrame(tick);
-}
-
-function startCounterAnimation(strip) {
-  strip.querySelectorAll('.c-num[data-count]').forEach((el, i) => {
-    const target = Number(el.dataset.count);
-    if (!Number.isFinite(target)) return;
-    setTimeout(() => animateCount(el, target, 1200 + i * 120), i * 90);
-  });
-}
 
 const ro = new IntersectionObserver(entries => {
   entries.forEach(e => {
     if (!e.isIntersecting) return;
     e.target.classList.add('visible');
-    if (e.target.classList.contains('counter-strip')) startCounterAnimation(e.target);
     ro.unobserve(e.target);
   });
 }, { threshold: 0.12 });
 revealEls.forEach(el => ro.observe(el));
+
+const counterStrip = document.querySelector('.counter-strip');
+if (counterStrip) {
+  const counterRo = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.classList.add('visible');
+        counterRo.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.12 });
+  counterRo.observe(counterStrip);
+}
 
 const letterPs = document.querySelectorAll('.letter-body p');
 const letterRo = new IntersectionObserver(entries => {
