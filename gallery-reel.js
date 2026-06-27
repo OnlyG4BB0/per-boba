@@ -386,6 +386,12 @@ export async function initGalleryReel() {
   let dragMoved = false;
   let activeIndex = 0;
   let isVisible = false;
+  let scrollAnim = null;
+  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function easeOutCubic(t) {
+    return 1 - (1 - t) ** 3;
+  }
 
   function clampIndex(i) {
     return THREE.MathUtils.clamp(i, 0, items.length - 1);
@@ -410,10 +416,30 @@ export async function initGalleryReel() {
     stripGroup.position.x = -focusX;
   }
 
-  function goTo(index) {
-    floatIndex = clampIndex(index);
-    layoutFrames(floatIndex);
-    updateUI(floatIndex);
+  function tickScrollAnimation(now) {
+    if (!scrollAnim) return;
+    const t = Math.min(1, (now - scrollAnim.start) / scrollAnim.duration);
+    floatIndex = scrollAnim.from + (scrollAnim.to - scrollAnim.from) * easeOutCubic(t);
+    if (t >= 1) {
+      floatIndex = scrollAnim.to;
+      scrollAnim = null;
+    }
+  }
+
+  function goTo(index, { animate = true } = {}) {
+    const target = clampIndex(index);
+    if (!animate || prefersReducedMotion) {
+      scrollAnim = null;
+      floatIndex = target;
+      return;
+    }
+    if (Math.abs(floatIndex - target) < 0.001) return;
+    scrollAnim = {
+      from: floatIndex,
+      to: target,
+      start: performance.now(),
+      duration: 520,
+    };
   }
 
   function updateUI(index) {
@@ -483,6 +509,7 @@ export async function initGalleryReel() {
   }
 
   canvas.addEventListener('pointerdown', (e) => {
+    scrollAnim = null;
     isDragging = true;
     dragMoved = false;
     lastPointerX = e.clientX;
@@ -504,6 +531,7 @@ export async function initGalleryReel() {
 
   canvas.addEventListener('wheel', (e) => {
     e.preventDefault();
+    scrollAnim = null;
     const delta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
     floatIndex = clampIndex(floatIndex + delta * 0.0035);
     layoutFrames(floatIndex);
@@ -544,8 +572,9 @@ export async function initGalleryReel() {
   prevBtn?.addEventListener('click', () => goTo(floatIndex - 1));
   nextBtn?.addEventListener('click', () => goTo(floatIndex + 1));
 
-  function animate() {
+  function animate(now) {
     requestAnimationFrame(animate);
+    tickScrollAnimation(now ?? performance.now());
     layoutFrames(floatIndex);
     updateUI(floatIndex);
     frames.forEach(f => {
