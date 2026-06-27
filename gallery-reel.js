@@ -2,6 +2,8 @@ import * as THREE from 'three';
 
 const MEDIA_BASE = 'ricordi/';
 const MANIFEST_URL = `${MEDIA_BASE}manifest.json`;
+const PRELOAD_CONCURRENCY = 6;
+const PRELOAD_RADIUS = 10;
 
 function mediaUrl(file) {
   if (!file) return null;
@@ -81,6 +83,8 @@ export async function initGalleryReel() {
   const frames = [];
   const videoEls = [];
   const slotState = items.map(() => ({ loaded: false, loading: false }));
+  /** @type {Map<string, { image?: HTMLImageElement, promise?: Promise<HTMLImageElement>, ready?: boolean }>} */
+  const imageCache = new Map();
 
   const filmBaseMat = new THREE.MeshBasicMaterial({ color: 0x0c0a10 });
   const filmEdgeMat = new THREE.MeshBasicMaterial({
@@ -208,6 +212,88 @@ export async function initGalleryReel() {
 
   items.forEach((item, i) => buildFrameShell(item, i));
 
+  function preloadImageToCache(url) {
+    if (!url) return Promise.reject(new Error('missing url'));
+    const existing = imageCache.get(url);
+    if (existing?.ready) return Promise.resolve(existing.image);
+    if (existing?.promise) return existing.promise;
+
+    const entry = {};
+    entry.promise = new Promise((resolve, reject) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.decoding = 'async';
+      img.onload = async () => {
+        try {
+          if (img.decode) await img.decode();
+        } catch {
+          /* decode optional */
+        }
+        entry.image = img;
+        entry.ready = true;
+        resolve(img);
+      };
+      img.onerror = () => reject(new Error(`failed: ${url}`));
+      img.src = url;
+    });
+    imageCache.set(url, entry);
+    return entry.promise;
+  }
+
+  function startImagePreloadQueue() {
+    const jobs = items
+      .map((item, index) => ({ item, index, url: mediaUrl(item.file) }))
+      .filter(({ item, url }) => url && item.type !== 'video');
+
+    const priority = new Set([0, Math.floor(items.length / 2), items.length - 1]);
+    jobs.sort((a, b) => {
+      const da = Math.min(...[...priority].map(p => Math.abs(a.index - p)));
+      const db = Math.min(...[...priority].map(p => Math.abs(b.index - p)));
+      return da - db;
+    });
+
+    let cursor = 0;
+    async function worker() {
+      while (cursor < jobs.length) {
+        const job = jobs[cursor++];
+        try {
+          await preloadImageToCache(job.url);
+        } catch {
+          /* skip broken files */
+        }
+      }
+    }
+
+    for (let w = 0; w < PRELOAD_CONCURRENCY; w++) worker();
+  }
+
+  function scheduleIdleHydration() {
+    let index = 0;
+
+    function step(deadline) {
+      while (index < items.length && deadline.timeRemaining() > 4) {
+        const i = index;
+        const item = items[i];
+        const url = mediaUrl(item.file);
+        index += 1;
+        if (!url || item.type === 'video' || slotState[i].loaded) continue;
+        const cached = imageCache.get(url);
+        if (cached?.ready) {
+          loadMedia(i);
+        } else if (cached?.promise) {
+          cached.promise.then(() => {
+            if (!slotState[i].loaded) loadMedia(i);
+          }).catch(() => {});
+        }
+      }
+      if (index < items.length) {
+        requestIdleCallback(step, { timeout: 120 });
+      }
+    }
+
+    requestIdleCallback(step, { timeout: 300 });
+  }
+
   function relayoutStripPositions() {
     let x = 0;
     frames.forEach((group) => {
@@ -255,11 +341,10 @@ export async function initGalleryReel() {
         }
       } else {
         try {
-          tex = await new Promise((resolve, reject) => {
-            new THREE.TextureLoader().load(url, resolve, undefined, reject);
-          });
+          const img = await preloadImageToCache(url);
+          tex = new THREE.Texture(img);
           tex.colorSpace = THREE.SRGBColorSpace;
-          mediaSize = getMediaSize(tex.image);
+          mediaSize = getMediaSize(img);
           resetTextureMapping(tex);
         } catch {
           tex = makePlaceholderTexture('Foto');
@@ -284,15 +369,14 @@ export async function initGalleryReel() {
   }
 
   function preloadAround(centerIndex) {
-    const radius = 3;
-    for (let i = Math.max(0, centerIndex - radius); i <= Math.min(items.length - 1, centerIndex + radius); i++) {
+    for (let i = Math.max(0, centerIndex - PRELOAD_RADIUS); i <= Math.min(items.length - 1, centerIndex + PRELOAD_RADIUS); i++) {
       loadMedia(i);
     }
   }
 
+  startImagePreloadQueue();
+  scheduleIdleHydration();
   preloadAround(0);
-  preloadAround(Math.floor(items.length / 2));
-  preloadAround(items.length - 1);
 
   let floatIndex = 0;
   let isDragging = false;
