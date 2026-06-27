@@ -1,4 +1,4 @@
-{
+﻿{
     "items":  [
                   {
                       "file":  "immagini e video ricordi/photo_2026-06-28_00-14-16.jpg",
@@ -408,56 +408,6 @@
                   {
                       "file":  "immagini e video ricordi/photo_2026-06-28_00-34-11.jpg",
                       "type":  "image",
-                      "caption":  ""
-                  },
-                  {
-                      "file":  "immagini e video ricordi/video_2026-06-28_00-15-33.mp4",
-                      "type":  "video",
-                      "caption":  ""
-                  },
-                  {
-                      "file":  "immagini e video ricordi/video_2026-06-28_00-15-53.mp4",
-                      "type":  "video",
-                      "caption":  ""
-                  },
-                  {
-                      "file":  "immagini e video ricordi/video_2026-06-28_00-16-24.mp4",
-                      "type":  "video",
-                      "caption":  ""
-                  },
-                  {
-                      "file":  "immagini e video ricordi/video_2026-06-28_00-16-30.mp4",
-                      "type":  "video",
-                      "caption":  ""
-                  },
-                  {
-                      "file":  "immagini e video ricordi/video_2026-06-28_00-28-20.mp4",
-                      "type":  "video",
-                      "caption":  ""
-                  },
-                  {
-                      "file":  "immagini e video ricordi/video_2026-06-28_00-32-58.mp4",
-                      "type":  "video",
-                      "caption":  ""
-                  },
-                  {
-                      "file":  "immagini e video ricordi/video_2026-06-28_00-33-03.mp4",
-                      "type":  "video",
-                      "caption":  ""
-                  },
-                  {
-                      "file":  "immagini e video ricordi/video_2026-06-28_00-33-05.mp4",
-                      "type":  "video",
-                      "caption":  ""
-                  },
-                  {
-                      "file":  "immagini e video ricordi/video_2026-06-28_00-33-59.mp4",
-                      "type":  "video",
-                      "caption":  ""
-                  },
-                  {
-                      "file":  "immagini e video ricordi/video_2026-06-28_00-34-07.mp4",
-                      "type":  "video",
                       "caption":  ""
                   }
               ]

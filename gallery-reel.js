@@ -48,13 +48,15 @@ export async function initGalleryReel() {
   try {
     const res = await fetch(MANIFEST_URL);
     const data = await res.json();
-    items = Array.isArray(data.items) ? data.items.filter(i => i.file) : [];
+    items = Array.isArray(data.items)
+      ? data.items.filter(i => i.file && i.type !== 'video')
+      : [];
   } catch {
     items = [];
   }
 
   if (items.length === 0) {
-    items = [{ file: null, type: 'placeholder', caption: 'Aggiungi foto e video in ricordi/' }];
+    items = [{ file: null, type: 'placeholder', caption: 'Aggiungi foto in ricordi/' }];
   }
 
   const MAX_W = 2.35;
