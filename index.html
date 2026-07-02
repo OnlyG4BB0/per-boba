@@ -645,27 +645,39 @@ body::-webkit-scrollbar{display:none}
   display:grid;
   grid-template-columns:repeat(4, minmax(0, 1fr));
   gap:10px;
-  width:100%;
-  max-width:360px;
+  width:min(100%, 400px);
   margin:0 auto;
   touch-action:manipulation;
 }
 .memory-card{
+  position:relative;
+  display:block;
+  width:100%;
   aspect-ratio:1;
-  perspective:700px;
+  min-height:64px;
   padding:0;
   border:none;
   background:transparent;
   cursor:pointer;
   -webkit-tap-highlight-color:transparent;
+  opacity:0;
+  transform:translateY(12px) scale(.94);
+  animation:cardEnter .55s cubic-bezier(.22,1,.36,1) forwards;
 }
 .memory-card:disabled{cursor:default}
+.memory-card-scene{
+  position:absolute;
+  inset:0;
+  perspective:900px;
+  -webkit-perspective:900px;
+}
 .memory-card-inner{
-  position:relative;
-  width:100%;
-  height:100%;
+  position:absolute;
+  inset:0;
   transform-style:preserve-3d;
-  transition:transform .55s cubic-bezier(.22,1,.36,1);
+  -webkit-transform-style:preserve-3d;
+  transition:transform .65s cubic-bezier(.22,1,.36,1);
+  will-change:transform;
 }
 .memory-card.is-flipped .memory-card-inner,
 .memory-card.is-matched .memory-card-inner{
@@ -675,25 +687,36 @@ body::-webkit-scrollbar{display:none}
   position:absolute;
   inset:0;
   display:flex;
-  flex-direction:column;
   align-items:center;
   justify-content:center;
-  gap:4px;
-  border:1px solid rgba(201,168,76,.22);
+  border:1px solid rgba(201,168,76,.32);
   backface-visibility:hidden;
-  border-radius:2px;
+  -webkit-backface-visibility:hidden;
+  border-radius:4px;
+  box-shadow:0 6px 18px rgba(0,0,0,.28);
+  overflow:hidden;
 }
 .memory-face-back{
-  background:linear-gradient(145deg, rgba(201,168,76,.12), rgba(12,10,16,.9));
-  color:rgba(201,168,76,.55);
+  transform:rotateY(0deg);
+  background:
+    linear-gradient(145deg, rgba(201,168,76,.16), rgba(12,10,16,.96)),
+    radial-gradient(circle at 30% 25%, rgba(232,160,176,.12), transparent 55%);
+  color:rgba(201,168,76,.72);
   font-family:'Cormorant Garamond',serif;
-  font-size:1.5rem;
+  font-size:clamp(1.25rem, 4.5vw, 1.85rem);
+}
+.memory-face-back::after{
+  content:'';
+  position:absolute;
+  inset:8px;
+  border:1px solid rgba(201,168,76,.18);
+  border-radius:2px;
+  pointer-events:none;
 }
 .memory-face-front{
   transform:rotateY(180deg);
   background:#0c0a10;
   padding:0;
-  overflow:hidden;
 }
 .memory-photo{
   width:100%;
@@ -704,15 +727,18 @@ body::-webkit-scrollbar{display:none}
   user-select:none;
 }
 .memory-card.is-matched .memory-face-front{
-  border-color:rgba(201,168,76,.55);
-  box-shadow:0 0 18px rgba(201,168,76,.15);
+  border-color:rgba(201,168,76,.65);
+  box-shadow:0 0 22px rgba(201,168,76,.22);
 }
 .memory-card.is-match-pop .memory-card-inner{
-  animation:cardPop .45s cubic-bezier(.22,1,.36,1);
+  animation:cardPop .5s cubic-bezier(.22,1,.36,1);
+}
+@keyframes cardEnter{
+  to{opacity:1;transform:translateY(0) scale(1)}
 }
 @keyframes cardPop{
   0%,100%{transform:rotateY(180deg) scale(1)}
-  50%{transform:rotateY(180deg) scale(1.06)}
+  50%{transform:rotateY(180deg) scale(1.07)}
 }
 .game-msg{
   font-family:'Cormorant Garamond',serif;
@@ -883,7 +909,8 @@ body::-webkit-scrollbar{display:none}
     padding:14px 24px;
     letter-spacing:.22em;
   }
-  .memory-grid{max-width:min(92vw, 320px);gap:8px}
+  .memory-grid{width:min(92vw, 340px);gap:8px}
+  .memory-card{min-height:58px}
   .song-player{max-width:100%}
   #gallery-canvas{height:min(62vh, 480px);min-height:260px}
 }
@@ -933,6 +960,15 @@ body::-webkit-scrollbar{display:none}
   .reason-card .r-text{opacity:1;transform:none;filter:none}
   .ambient i{opacity:0;animation:none}
   .counter-fade{opacity:1}
+  .memory-card-inner{
+    transition-duration:.65s!important;
+  }
+  .memory-card.is-match-pop .memory-card-inner{
+    animation-duration:.5s!important;
+  }
+  .memory-card{
+    animation-duration:.55s!important;
+  }
 }
 </style>
 </head>
@@ -1709,7 +1745,9 @@ function setShown(el, show) {
   async function loadPhotoPairs() {
     try {
       const res = await fetch(MANIFEST_URL);
-      const data = await res.json();
+      if (!res.ok) return [];
+      const raw = await res.text();
+      const data = JSON.parse(raw.replace(/^\uFEFF/, ''));
       const images = Array.isArray(data.items)
         ? data.items.filter(item => item.file && item.type === 'image')
         : [];
@@ -1729,8 +1767,8 @@ function setShown(el, show) {
     const urls = [...new Set(pairs.map(pair => mediaUrl(pair.file)))];
     return Promise.all(urls.map(url => new Promise((resolve) => {
       const img = new Image();
-      img.onload = () => resolve(url);
-      img.onerror = () => resolve(url);
+      img.onload = () => resolve({ url, ok: true });
+      img.onerror = () => resolve({ url, ok: false });
       img.src = url;
     })));
   }
@@ -1741,6 +1779,10 @@ function setShown(el, show) {
     btn.className = 'memory-card';
     btn.dataset.pairId = pair.id;
     btn.setAttribute('aria-label', `Carta ${index + 1}`);
+    btn.style.animationDelay = `${index * 45}ms`;
+
+    const scene = document.createElement('span');
+    scene.className = 'memory-card-scene';
 
     const inner = document.createElement('span');
     inner.className = 'memory-card-inner';
@@ -1759,11 +1801,17 @@ function setShown(el, show) {
     img.alt = pair.caption;
     img.loading = 'eager';
     img.decoding = 'async';
+    img.addEventListener('error', () => {
+      img.remove();
+      front.style.background = 'linear-gradient(145deg, rgba(232,160,176,.25), rgba(12,10,16,.95))';
+      front.insertAdjacentHTML('beforeend', '<span style="font-size:1.5rem;color:var(--blush)">♥</span>');
+    });
 
     front.appendChild(img);
     inner.appendChild(back);
     inner.appendChild(front);
-    btn.appendChild(inner);
+    scene.appendChild(inner);
+    btn.appendChild(scene);
     btn.addEventListener('click', () => onCardClick(btn));
     return btn;
   }
@@ -1842,27 +1890,33 @@ function setShown(el, show) {
 
   async function startGame() {
     startBtn.disabled = true;
+    setShown(gameEl, true);
+    gameEl.classList.add('is-active');
+    gameEl.classList.remove('is-won');
+    gridEl.innerHTML = '';
     msgEl.textContent = 'Carico i nostri ricordi…';
 
     photoPairs = await loadPhotoPairs();
     if (photoPairs.length < 2) {
       msgEl.textContent = 'Non riesco a caricare le foto — riprova';
       startBtn.disabled = false;
+      setShown(gameEl, false);
+      gameEl.classList.remove('is-active');
       return;
     }
 
-    await preloadPhotos(photoPairs);
+    const preloadResults = await preloadPhotos(photoPairs);
+    const failed = preloadResults.filter(r => !r.ok).length;
     startBtn.disabled = false;
 
     setShown(startBtn, false);
     setShown(songPlayer, false);
     songIframe.src = '';
     songPlayer.classList.remove('is-visible');
-    setShown(gameEl, true);
-    gameEl.classList.add('is-active');
-    gameEl.classList.remove('is-won');
     introEl.textContent = `Trova le ${photoPairs.length} coppie di foto — i nostri ricordi`;
-    msgEl.textContent = 'Gira due carte e trova le coppie';
+    msgEl.textContent = failed
+      ? 'Alcune foto non si caricano — riprova o ricarica la pagina'
+      : 'Gira due carte e trova le coppie';
     resetBoard();
   }
 
