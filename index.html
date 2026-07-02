@@ -691,20 +691,17 @@ body::-webkit-scrollbar{display:none}
 }
 .memory-face-front{
   transform:rotateY(180deg);
-  background:rgba(20,16,24,.95);
-  color:var(--blush);
+  background:#0c0a10;
+  padding:0;
+  overflow:hidden;
 }
-.memory-symbol{
-  font-size:clamp(1.35rem, 5vw, 1.75rem);
-  line-height:1;
-  filter:drop-shadow(0 0 10px rgba(232,160,176,.25));
-}
-.memory-label{
-  font-family:'Raleway',sans-serif;
-  font-size:.46rem;
-  letter-spacing:.18em;
-  text-transform:uppercase;
-  color:var(--muted);
+.memory-photo{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  display:block;
+  pointer-events:none;
+  user-select:none;
 }
 .memory-card.is-matched .memory-face-front{
   border-color:rgba(201,168,76,.55);
@@ -1109,9 +1106,9 @@ body::-webkit-scrollbar{display:none}
     <button type="button" class="heart-btn" id="game-start-btn">♥ &nbsp;Gioca per sbloccare</button>
 
     <div class="heart-game is-hidden" id="heart-game">
-      <p class="game-intro" id="game-intro">Trova le 8 coppie — una per ogni mese insieme</p>
+      <p class="game-intro" id="game-intro">Trova le 8 coppie di foto — i nostri ricordi</p>
       <div class="game-hud">
-        <span class="game-stat">Coppie <strong id="game-score">0</strong> / 8</span>
+        <span class="game-stat">Coppie <strong id="game-score">0</strong> / <span id="game-goal">8</span></span>
         <span class="game-stat" id="game-moves">0 mosse</span>
       </div>
       <div class="memory-grid" id="memory-grid" role="grid" aria-label="Gioco memory"></div>
@@ -1639,35 +1636,35 @@ function setShown(el, show) {
 }
 
 (function initHeartGame() {
-  const PAIRS = [
-    { id: 'heart', symbol: '♥', label: 'Amore' },
-    { id: 'rose', symbol: '🌹', label: 'Rosa' },
-    { id: 'star', symbol: '✨', label: 'Stella' },
-    { id: 'moon', symbol: '🌙', label: 'Notte' },
-    { id: 'coffee', symbol: '☕', label: 'Mattina' },
-    { id: 'music', symbol: '🎵', label: 'Canzone' },
-    { id: 'sparkle', symbol: '💫', label: 'Magia' },
-    { id: 'butterfly', symbol: '🦋', label: 'Leggera' },
-  ];
-  const GOAL = PAIRS.length;
+  const MEDIA_BASE = 'ricordi/';
+  const MANIFEST_URL = `${MEDIA_BASE}manifest.json`;
+  const PAIR_COUNT = 8;
 
   const startBtn = document.getElementById('game-start-btn');
   const gameEl = document.getElementById('heart-game');
   const gridEl = document.getElementById('memory-grid');
   const scoreEl = document.getElementById('game-score');
+  const goalEl = document.getElementById('game-goal');
   const movesEl = document.getElementById('game-moves');
+  const introEl = document.getElementById('game-intro');
   const msgEl = document.getElementById('game-msg');
   const songPlayer = document.getElementById('song-player');
   const songIframe = document.getElementById('song-iframe');
 
   if (!startBtn || !gameEl || !gridEl || !songPlayer || !songIframe) return;
 
+  let photoPairs = [];
+  let goal = PAIR_COUNT;
   let cards = [];
   let flipped = [];
   let matched = 0;
   let moves = 0;
   let locked = false;
   let playing = false;
+
+  function mediaUrl(file) {
+    return encodeURI(`${MEDIA_BASE}${file}`);
+  }
 
   function showPlayer({ userGesture = false } = {}) {
     const videoId = extractYouTubeId(YOUTUBE_URL);
@@ -1705,7 +1702,37 @@ function setShown(el, show) {
 
   function updateHud() {
     scoreEl.textContent = String(matched);
+    if (goalEl) goalEl.textContent = String(goal);
     movesEl.textContent = `${moves} ${moves === 1 ? 'mossa' : 'mosse'}`;
+  }
+
+  async function loadPhotoPairs() {
+    try {
+      const res = await fetch(MANIFEST_URL);
+      const data = await res.json();
+      const images = Array.isArray(data.items)
+        ? data.items.filter(item => item.file && item.type === 'image')
+        : [];
+      if (images.length < 2) return [];
+      const picked = shuffle(images).slice(0, Math.min(PAIR_COUNT, images.length));
+      return picked.map((item, index) => ({
+        id: item.file,
+        file: item.file,
+        caption: item.caption || `Ricordo ${index + 1}`,
+      }));
+    } catch {
+      return [];
+    }
+  }
+
+  function preloadPhotos(pairs) {
+    const urls = [...new Set(pairs.map(pair => mediaUrl(pair.file)))];
+    return Promise.all(urls.map(url => new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => resolve(url);
+      img.onerror = () => resolve(url);
+      img.src = url;
+    })));
   }
 
   function buildCard(pair, index) {
@@ -1714,15 +1741,29 @@ function setShown(el, show) {
     btn.className = 'memory-card';
     btn.dataset.pairId = pair.id;
     btn.setAttribute('aria-label', `Carta ${index + 1}`);
-    btn.innerHTML = `
-      <span class="memory-card-inner">
-        <span class="memory-face memory-face-back" aria-hidden="true">♥</span>
-        <span class="memory-face memory-face-front">
-          <span class="memory-symbol">${pair.symbol}</span>
-          <span class="memory-label">${pair.label}</span>
-        </span>
-      </span>
-    `;
+
+    const inner = document.createElement('span');
+    inner.className = 'memory-card-inner';
+
+    const back = document.createElement('span');
+    back.className = 'memory-face memory-face-back';
+    back.setAttribute('aria-hidden', 'true');
+    back.textContent = '♥';
+
+    const front = document.createElement('span');
+    front.className = 'memory-face memory-face-front';
+
+    const img = document.createElement('img');
+    img.className = 'memory-photo';
+    img.src = mediaUrl(pair.file);
+    img.alt = pair.caption;
+    img.loading = 'eager';
+    img.decoding = 'async';
+
+    front.appendChild(img);
+    inner.appendChild(back);
+    inner.appendChild(front);
+    btn.appendChild(inner);
     btn.addEventListener('click', () => onCardClick(btn));
     return btn;
   }
@@ -1735,9 +1776,10 @@ function setShown(el, show) {
     moves = 0;
     locked = false;
     playing = true;
+    goal = photoPairs.length;
     updateHud();
 
-    const deck = shuffle(PAIRS.flatMap(pair => [
+    const deck = shuffle(photoPairs.flatMap(pair => [
       { ...pair, key: `${pair.id}-a` },
       { ...pair, key: `${pair.id}-b` },
     ]));
@@ -1757,7 +1799,7 @@ function setShown(el, show) {
     flipped.push(card);
 
     if (flipped.length < 2) {
-      msgEl.textContent = 'Trova la carta gemella';
+      msgEl.textContent = 'Trova la stessa foto';
       return;
     }
 
@@ -1779,9 +1821,9 @@ function setShown(el, show) {
       flipped = [];
       locked = false;
       updateHud();
-      msgEl.textContent = matched === GOAL ? 'Hai trovato tutte le coppie ♥' : 'Bella coppia!';
+      msgEl.textContent = matched === goal ? 'Hai trovato tutte le coppie ♥' : 'Bella coppia!';
 
-      if (matched >= GOAL) {
+      if (matched >= goal) {
         playing = false;
         setTimeout(() => unlockSong({ userGesture: true }), 700);
       }
@@ -1798,7 +1840,20 @@ function setShown(el, show) {
     }, 900);
   }
 
-  function startGame() {
+  async function startGame() {
+    startBtn.disabled = true;
+    msgEl.textContent = 'Carico i nostri ricordi…';
+
+    photoPairs = await loadPhotoPairs();
+    if (photoPairs.length < 2) {
+      msgEl.textContent = 'Non riesco a caricare le foto — riprova';
+      startBtn.disabled = false;
+      return;
+    }
+
+    await preloadPhotos(photoPairs);
+    startBtn.disabled = false;
+
     setShown(startBtn, false);
     setShown(songPlayer, false);
     songIframe.src = '';
@@ -1806,6 +1861,7 @@ function setShown(el, show) {
     setShown(gameEl, true);
     gameEl.classList.add('is-active');
     gameEl.classList.remove('is-won');
+    introEl.textContent = `Trova le ${photoPairs.length} coppie di foto — i nostri ricordi`;
     msgEl.textContent = 'Gira due carte e trova le coppie';
     resetBoard();
   }
