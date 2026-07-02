@@ -1,0 +1,15 @@
+---
+description: Push automatico su GitHub dopo ogni modifica al progetto per-boba
+alwaysApply: true
+---
+
+# Auto-push GitHub (per-boba)
+
+Dopo aver completato modifiche in questo progetto:
+
+1. Verifica `git status` e includi tutti i file rilevanti (mai `.env` o segreti).
+2. Crea un commit con messaggio breve che spiega il perché.
+3. Esegui `git push origin main` senza chiedere conferma all'utente.
+4. Comunica repo e URL Pages se il deploy è rilevante.
+
+Non fare push se non ci sono cambiamenti da committare.

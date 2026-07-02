@@ -618,8 +618,30 @@ body::-webkit-scrollbar{display:none}
   font-size:1.05rem;
   font-style:italic;
   color:var(--muted);
-  margin-bottom:16px;
+  margin-bottom:12px;
   line-height:1.5;
+}
+.game-hud{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:12px;
+  font-family:'Raleway',sans-serif;
+  font-size:.58rem;
+  letter-spacing:.22em;
+  text-transform:uppercase;
+  color:var(--muted);
+}
+.game-level{color:var(--gold)}
+.game-lives{
+  letter-spacing:.12em;
+  color:var(--blush);
+}
+.game-lives.is-low{animation:lifePulse 1s ease-in-out infinite}
+@keyframes lifePulse{
+  0%,100%{opacity:1}
+  50%{opacity:.45}
 }
 .game-progress{
   font-family:'Raleway',sans-serif;
@@ -664,6 +686,28 @@ body::-webkit-scrollbar{display:none}
 }
 .game-heart:active{transform:scale(1.2)}
 .game-heart.is-leaving{opacity:0;transform:scale(.4)}
+.game-heart.is-fake{
+  color:rgba(154,138,144,.75);
+  filter:drop-shadow(0 0 6px rgba(154,138,144,.2));
+}
+.game-heart.is-moving{will-change:transform}
+.game-level-banner{
+  position:absolute;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:rgba(8,6,14,.72);
+  color:var(--gold);
+  font-family:'Cormorant Garamond',serif;
+  font-size:clamp(1.2rem,4vw,1.6rem);
+  font-style:italic;
+  opacity:0;
+  pointer-events:none;
+  transition:opacity .35s ease;
+  z-index:2;
+}
+.game-level-banner.is-visible{opacity:1}
 @keyframes heartPop{
   from{opacity:0;transform:scale(.3)}
   to{opacity:1;transform:scale(1)}
@@ -1060,9 +1104,15 @@ body::-webkit-scrollbar{display:none}
     <button type="button" class="heart-btn" id="game-start-btn">♥ &nbsp;Gioca per sbloccare</button>
 
     <div class="heart-game is-hidden" id="heart-game">
-      <p class="game-intro">Raccogli 8 cuori — uno per ogni mese insieme</p>
-      <p class="game-progress"><strong id="game-score">0</strong> / 8</p>
-      <div class="game-arena" id="game-arena" aria-label="Area di gioco"></div>
+      <p class="game-intro" id="game-intro">Tre prove per il nostro cuore — poi la canzone è tua</p>
+      <div class="game-hud">
+        <span class="game-level" id="game-level">Livello 1 / 3</span>
+        <span class="game-lives" id="game-lives" aria-label="Vite rimaste">♥ ♥ ♥</span>
+      </div>
+      <p class="game-progress"><strong id="game-score">0</strong> / <span id="game-goal">6</span></p>
+      <div class="game-arena" id="game-arena" aria-label="Area di gioco">
+        <div class="game-level-banner" id="game-level-banner" aria-hidden="true"></div>
+      </div>
       <p class="game-msg" id="game-msg">Tocca i cuori prima che svaniscano</p>
     </div>
 
@@ -1587,24 +1637,77 @@ function setShown(el, show) {
 }
 
 (function initHeartGame() {
-  const GOAL = 8;
-  const SPAWN_MS = 850;
-  const HEART_LIFE_MS = 2600;
+  const LEVELS = [
+    {
+      goal: 6,
+      spawnMs: 880,
+      lifeMs: 2800,
+      maxOnScreen: 2,
+      moving: false,
+      decoys: false,
+      intro: 'Livello 1 — i cuori fermi',
+      hint: 'Tocca i cuori prima che svaniscano',
+      banner: 'Livello 1',
+    },
+    {
+      goal: 8,
+      spawnMs: 720,
+      lifeMs: 2200,
+      maxOnScreen: 3,
+      moving: true,
+      decoys: false,
+      intro: 'Livello 2 — i cuori si muovono',
+      hint: 'Segui i cuori mentre scappano',
+      banner: 'Livello 2',
+    },
+    {
+      goal: 8,
+      spawnMs: 620,
+      lifeMs: 1900,
+      maxOnScreen: 4,
+      moving: true,
+      decoys: true,
+      decoyChance: 0.32,
+      intro: 'Livello 3 — solo cuori rosa',
+      hint: 'Evita i cuori grigi — sono falsi',
+      banner: 'Ultima prova',
+    },
+  ];
+  const MAX_LIVES = 3;
+  const HEART_SIZE = 48;
+  const PAD = 10;
 
   const startBtn = document.getElementById('game-start-btn');
   const gameEl = document.getElementById('heart-game');
   const arena = document.getElementById('game-arena');
+  const levelBanner = document.getElementById('game-level-banner');
+  const introEl = document.getElementById('game-intro');
+  const levelEl = document.getElementById('game-level');
+  const livesEl = document.getElementById('game-lives');
   const scoreEl = document.getElementById('game-score');
+  const goalEl = document.getElementById('game-goal');
   const msgEl = document.getElementById('game-msg');
   const songPlayer = document.getElementById('song-player');
   const songIframe = document.getElementById('song-iframe');
 
   if (!startBtn || !gameEl || !arena || !songPlayer || !songIframe) return;
 
+  let levelIndex = 0;
   let score = 0;
+  let lives = MAX_LIVES;
   let playing = false;
   let spawnTimer = null;
+  let rafId = null;
   const timeouts = new Set();
+  const movers = new Set();
+
+  function clamp(n, min, max) {
+    return Math.min(max, Math.max(min, n));
+  }
+
+  function currentLevel() {
+    return LEVELS[levelIndex];
+  }
 
   function showPlayer({ userGesture = false } = {}) {
     const videoId = extractYouTubeId(YOUTUBE_URL);
@@ -1622,11 +1725,7 @@ function setShown(el, show) {
   }
 
   function unlockSong({ userGesture = true } = {}) {
-    playing = false;
-    clearTimeout(spawnTimer);
-    timeouts.forEach(clearTimeout);
-    timeouts.clear();
-    arena.querySelectorAll('.game-heart').forEach(el => el.remove());
+    stopGameLoop();
     setShown(startBtn, false);
     setShown(gameEl, false);
     gameEl.classList.remove('is-active');
@@ -1635,10 +1734,227 @@ function setShown(el, show) {
     showPlayer({ userGesture });
   }
 
-  function startGame() {
+  function stopGameLoop() {
+    playing = false;
+    clearTimeout(spawnTimer);
+    spawnTimer = null;
+    timeouts.forEach(clearTimeout);
+    timeouts.clear();
+    if (rafId) cancelAnimationFrame(rafId);
+    rafId = null;
+    arena.querySelectorAll('.game-heart').forEach(el => el.remove());
+    movers.clear();
+  }
+
+  function renderLives() {
+    livesEl.textContent = '♥ '.repeat(lives).trim() || '—';
+    livesEl.classList.toggle('is-low', lives <= 1);
+  }
+
+  function updateHud() {
+    const level = currentLevel();
+    levelEl.textContent = `Livello ${levelIndex + 1} / ${LEVELS.length}`;
+    goalEl.textContent = String(level.goal);
+    scoreEl.textContent = String(score);
+    introEl.textContent = level.intro;
+    renderLives();
+  }
+
+  function showBanner(text, ms = 1400) {
+    if (!levelBanner) return Promise.resolve();
+    levelBanner.textContent = text;
+    levelBanner.classList.add('is-visible');
+    levelBanner.setAttribute('aria-hidden', 'false');
+    return new Promise((resolve) => {
+      const t = setTimeout(() => {
+        levelBanner.classList.remove('is-visible');
+        levelBanner.setAttribute('aria-hidden', 'true');
+        timeouts.delete(t);
+        resolve();
+      }, ms);
+      timeouts.add(t);
+    });
+  }
+
+  function loseLife(reason) {
+    if (!playing) return;
+    lives -= 1;
+    renderLives();
+    msgEl.textContent = reason;
+    if (lives <= 0) {
+      msgEl.textContent = 'Riprova — ce la fai ♥';
+      const t = setTimeout(() => restartLevel(), 900);
+      timeouts.add(t);
+      return;
+    }
+    msgEl.textContent = `${reason} — ancora ${lives} ${lives === 1 ? 'vita' : 'vite'}`;
+  }
+
+  function restartLevel() {
+    stopGameLoop();
     score = 0;
+    lives = MAX_LIVES;
+    updateHud();
+    msgEl.textContent = currentLevel().hint;
     playing = true;
-    updateScore();
+    scheduleSpawn();
+    tickMovers();
+  }
+
+  async function advanceLevel() {
+    playing = false;
+    clearTimeout(spawnTimer);
+    arena.querySelectorAll('.game-heart').forEach(el => el.remove());
+    movers.clear();
+
+    if (levelIndex >= LEVELS.length - 1) {
+      await showBanner('Hai vinto! ♥', 1200);
+      unlockSong({ userGesture: true });
+      return;
+    }
+
+    levelIndex += 1;
+    score = 0;
+    lives = MAX_LIVES;
+    updateHud();
+    await showBanner(currentLevel().banner, 1300);
+    msgEl.textContent = currentLevel().hint;
+    playing = true;
+    scheduleSpawn();
+  }
+
+  function onHeartCollected(btn, lifeTimeout) {
+    clearTimeout(lifeTimeout);
+    timeouts.delete(lifeTimeout);
+    movers.delete(btn);
+    score += 1;
+    updateHud();
+    btn.classList.add('is-leaving');
+    setTimeout(() => btn.remove(), 180);
+    if (score >= currentLevel().goal) {
+      playing = false;
+      clearTimeout(spawnTimer);
+      const t = setTimeout(() => {
+        timeouts.delete(t);
+        advanceLevel();
+      }, 420);
+      timeouts.add(t);
+    }
+  }
+
+  function onHeartMissed(btn, lifeTimeout) {
+    if (!btn.isConnected || btn.classList.contains('is-leaving')) return;
+    clearTimeout(lifeTimeout);
+    timeouts.delete(lifeTimeout);
+    movers.delete(btn);
+    btn.classList.add('is-leaving');
+    setTimeout(() => btn.remove(), 220);
+    if (btn.dataset.fake === '1') return;
+    loseLife('Hai perso un cuore');
+  }
+
+  function spawnHeart() {
+    if (!playing || score >= currentLevel().goal) return;
+    const level = currentLevel();
+    const onScreen = arena.querySelectorAll('.game-heart').length;
+    if (onScreen >= level.maxOnScreen) {
+      spawnTimer = setTimeout(scheduleSpawn, level.spawnMs * 0.6);
+      return;
+    }
+
+    const isFake = level.decoys && Math.random() < level.decoyChance;
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'game-heart' + (isFake ? ' is-fake' : '') + (level.moving ? ' is-moving' : '');
+    btn.textContent = '♥';
+    btn.dataset.fake = isFake ? '1' : '0';
+    btn.setAttribute('aria-label', isFake ? 'Cuore falso' : 'Raccogli cuore');
+
+    const maxX = Math.max(0, arena.clientWidth - HEART_SIZE - PAD * 2);
+    const maxY = Math.max(0, arena.clientHeight - HEART_SIZE - PAD * 2);
+    const x = PAD + Math.random() * maxX;
+    const y = PAD + Math.random() * maxY;
+    btn.style.left = `${x}px`;
+    btn.style.top = `${y}px`;
+
+    if (level.moving) {
+      btn.dataset.x = String(x);
+      btn.dataset.y = String(y);
+      btn.dataset.vx = String((Math.random() > 0.5 ? 1 : -1) * (1.1 + Math.random() * 1.4));
+      btn.dataset.vy = String((Math.random() > 0.5 ? 1 : -1) * (0.9 + Math.random() * 1.2));
+      movers.add(btn);
+    }
+
+    const life = setTimeout(() => onHeartMissed(btn, life), level.lifeMs);
+    timeouts.add(life);
+
+    btn.addEventListener('click', () => {
+      if (!playing) return;
+      if (isFake) {
+        clearTimeout(life);
+        timeouts.delete(life);
+        movers.delete(btn);
+        btn.classList.add('is-leaving');
+        setTimeout(() => btn.remove(), 180);
+        loseLife('Quello era un cuore falso');
+        return;
+      }
+      onHeartCollected(btn, life);
+    });
+
+    arena.appendChild(btn);
+  }
+
+  function scheduleSpawn() {
+    if (!playing || score >= currentLevel().goal) return;
+    spawnHeart();
+    const level = currentLevel();
+    spawnTimer = setTimeout(scheduleSpawn, level.spawnMs + Math.random() * 280);
+  }
+
+  function tickMovers() {
+    if (!playing && movers.size === 0) return;
+    const w = arena.clientWidth;
+    const h = arena.clientHeight;
+
+    movers.forEach((btn) => {
+      if (!btn.isConnected) {
+        movers.delete(btn);
+        return;
+      }
+      let x = Number(btn.dataset.x);
+      let y = Number(btn.dataset.y);
+      let vx = Number(btn.dataset.vx);
+      let vy = Number(btn.dataset.vy);
+      x += vx;
+      y += vy;
+      const maxX = Math.max(0, w - HEART_SIZE - PAD);
+      const maxY = Math.max(0, h - HEART_SIZE - PAD);
+      if (x <= PAD || x >= maxX) {
+        vx *= -1;
+        x = clamp(x, PAD, maxX);
+      }
+      if (y <= PAD || y >= maxY) {
+        vy *= -1;
+        y = clamp(y, PAD, maxY);
+      }
+      btn.dataset.x = String(x);
+      btn.dataset.y = String(y);
+      btn.dataset.vx = String(vx);
+      btn.dataset.vy = String(vy);
+      btn.style.left = `${x}px`;
+      btn.style.top = `${y}px`;
+    });
+
+    rafId = requestAnimationFrame(tickMovers);
+  }
+
+  async function startGame() {
+    stopGameLoop();
+    levelIndex = 0;
+    score = 0;
+    lives = MAX_LIVES;
+    updateHud();
     setShown(startBtn, false);
     setShown(songPlayer, false);
     songIframe.src = '';
@@ -1646,56 +1962,11 @@ function setShown(el, show) {
     setShown(gameEl, true);
     gameEl.classList.add('is-active');
     gameEl.classList.remove('is-won');
-    msgEl.textContent = 'Tocca i cuori prima che svaniscano';
-    arena.querySelectorAll('.game-heart').forEach(el => el.remove());
+    msgEl.textContent = currentLevel().hint;
+    await showBanner('Iniziamo ♥', 1000);
+    playing = true;
     scheduleSpawn();
-  }
-
-  function updateScore() {
-    scoreEl.textContent = String(score);
-  }
-
-  function spawnHeart() {
-    if (!playing || score >= GOAL) return;
-
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'game-heart';
-    btn.textContent = '♥';
-    btn.setAttribute('aria-label', 'Raccogli cuore');
-
-    const size = 48;
-    const pad = 10;
-    const maxX = Math.max(0, arena.clientWidth - size - pad * 2);
-    const maxY = Math.max(0, arena.clientHeight - size - pad * 2);
-    btn.style.left = `${pad + Math.random() * maxX}px`;
-    btn.style.top = `${pad + Math.random() * maxY}px`;
-
-    const life = setTimeout(() => {
-      if (!btn.isConnected) return;
-      btn.classList.add('is-leaving');
-      setTimeout(() => btn.remove(), 260);
-    }, HEART_LIFE_MS);
-    timeouts.add(life);
-
-    btn.addEventListener('click', () => {
-      if (!playing) return;
-      clearTimeout(life);
-      timeouts.delete(life);
-      score += 1;
-      updateScore();
-      btn.classList.add('is-leaving');
-      setTimeout(() => btn.remove(), 180);
-      if (score >= GOAL) unlockSong({ userGesture: true });
-    });
-
-    arena.appendChild(btn);
-  }
-
-  function scheduleSpawn() {
-    if (!playing || score >= GOAL) return;
-    spawnHeart();
-    spawnTimer = setTimeout(scheduleSpawn, SPAWN_MS + Math.random() * 400);
+    tickMovers();
   }
 
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
