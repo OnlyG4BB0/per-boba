@@ -643,7 +643,7 @@ body::-webkit-scrollbar{display:none}
 }
 .memory-grid{
   display:grid;
-  grid-template-columns:repeat(4, minmax(0, 1fr));
+  grid-template-columns:repeat(3, minmax(0, 1fr));
   gap:10px;
   width:min(100%, 400px);
   margin:0 auto;
@@ -983,7 +983,7 @@ body::-webkit-scrollbar{display:none}
 
     <!-- Layer 0 – initial title (0–15% scroll) -->
     <div class="text-layer" id="layer-0" style="top:0;height:100vh">
-      <p class="eyebrow">Otto mesi insieme</p>
+      <p class="eyebrow">Nove mesi insieme</p>
       <h1 class="big-title">Per<br/><em>Boba</em></h1>
       <p class="subtitle">con tutto il mio cuore</p>
       <div class="scroll-nudge">
@@ -1006,7 +1006,7 @@ body::-webkit-scrollbar{display:none}
 
     <!-- Layer 3 – fioritura (55–75%) -->
     <div class="text-layer" id="layer-3" style="top:0;height:100vh">
-      <p class="eyebrow">Otto mesi fa</p>
+      <p class="eyebrow">Nove mesi fa</p>
       <p class="quote-text">"Hai portato colore<br/>dove non sapevo<br/>che potesse esistere."</p>
     </div>
 
@@ -1027,22 +1027,22 @@ body::-webkit-scrollbar{display:none}
     <i>♥</i><i>✦</i><i>♥</i><i>✦</i><i>♥</i><i>✦</i>
   </div>
 
-  <!-- Counter -->
-  <div class="counter-strip counter-fade">
+  <!-- Counter (live) -->
+  <div class="counter-strip counter-fade" id="together-counter" aria-live="polite">
     <div class="c-item">
-      <span class="c-num">8</span>
+      <span class="c-num" id="count-months">9</span>
       <span class="c-unit">Mesi</span>
     </div>
     <div class="c-item">
-      <span class="c-num">244</span>
+      <span class="c-num" id="count-days">—</span>
       <span class="c-unit">Giorni</span>
     </div>
     <div class="c-item">
-      <span class="c-num">5.856</span>
+      <span class="c-num" id="count-hours">—</span>
       <span class="c-unit">Ore</span>
     </div>
     <div class="c-item">
-      <span class="c-num">351.360</span>
+      <span class="c-num" id="count-minutes">—</span>
       <span class="c-unit">Minuti</span>
     </div>
   </div>
@@ -1054,7 +1054,7 @@ body::-webkit-scrollbar{display:none}
     <h2 class="letter-greeting">Cara<br/><em>Boba,</em></h2>
     <div class="letter-body">
       <p>A volte mi fermo a cercare le parole giuste e non le trovo — non perché quello che sento sia semplice, ma perché <strong>è così grande che nessuna frase gli rende giustizia</strong>.</p>
-      <p>Otto mesi fa sei entrata nella mia vita e, senza far rumore, hai reso il mondo un posto più luminoso. La tua risata che taglia il silenzio. Il modo in cui mi guardi e improvvisamente tutto trova il suo posto. Piccole cose — eppure cambiano tutto.</p>
+      <p>Nove mesi fa sei entrata nella mia vita e, senza far rumore, hai reso il mondo un posto più luminoso. La tua risata che taglia il silenzio. Il modo in cui mi guardi e improvvisamente tutto trova il suo posto. Piccole cose — eppure cambiano tutto.</p>
       <p><strong>Sei tu. Sempre tu.</strong></p>
       <p>Non amo solo i grandi momenti. Amo anche quelli banali: le conversazioni che si allungano, le cose stupide che ci fanno ridere ancora ore dopo, i silenzi comodi che non chiedono di essere riempiti. In ognuno di questi istanti ti ho conosciuta un po' di più — e ogni volta il mio cuore ha scelto di restare.</p>
       <p>Grazie per essere realmente, profondamente te. Ti amo esattamente così. Non cambierei nulla.</p>
@@ -1136,15 +1136,15 @@ body::-webkit-scrollbar{display:none}
 
   <!-- Finale -->
   <h2 class="finale-big reveal"><em>Boba</em><br/>ti amo.</h2>
-  <p class="finale-sub reveal">Ad altri otto mesi, e a tutti quelli che vengono dopo.</p>
+  <p class="finale-sub reveal">Ad altri nove mesi, e a tutti quelli che vengono dopo.</p>
 
   <div class="song-unlock reveal" id="song-unlock">
     <button type="button" class="heart-btn" id="game-start-btn">♥ &nbsp;Gioca per sbloccare</button>
 
     <div class="heart-game is-hidden" id="heart-game">
-      <p class="game-intro" id="game-intro">Trova le 8 coppie di foto — i nostri ricordi</p>
+      <p class="game-intro" id="game-intro">Trova le 9 coppie di foto — una per ogni mese insieme</p>
       <div class="game-hud">
-        <span class="game-stat">Coppie <strong id="game-score">0</strong> / <span id="game-goal">8</span></span>
+        <span class="game-stat">Coppie <strong id="game-score">0</strong> / <span id="game-goal">9</span></span>
         <span class="game-stat" id="game-moves">0 mosse</span>
       </div>
       <div class="memory-grid" id="memory-grid" role="grid" aria-label="Gioco memory"></div>
@@ -1589,6 +1589,41 @@ if (counterStrip) {
   counterRo.observe(counterStrip);
 }
 
+// Contatori in tempo reale — data di inizio relazione
+const TOGETHER_SINCE = new Date('2025-10-17T00:00:00');
+
+function formatItNumber(n) {
+  return Math.max(0, Math.floor(n)).toLocaleString('it-IT');
+}
+
+function monthsTogether(from, to) {
+  let months = (to.getFullYear() - from.getFullYear()) * 12 + (to.getMonth() - from.getMonth());
+  if (to.getDate() < from.getDate()) months -= 1;
+  return Math.max(0, months);
+}
+
+function tickTogetherCounter() {
+  const monthsEl = document.getElementById('count-months');
+  const daysEl = document.getElementById('count-days');
+  const hoursEl = document.getElementById('count-hours');
+  const minutesEl = document.getElementById('count-minutes');
+  if (!monthsEl || !daysEl || !hoursEl || !minutesEl) return;
+
+  const now = new Date();
+  const ms = Math.max(0, now - TOGETHER_SINCE);
+  const days = Math.floor(ms / 86400000);
+  const hours = Math.floor(ms / 3600000);
+  const minutes = Math.floor(ms / 60000);
+
+  monthsEl.textContent = formatItNumber(monthsTogether(TOGETHER_SINCE, now));
+  daysEl.textContent = formatItNumber(days);
+  hoursEl.textContent = formatItNumber(hours);
+  minutesEl.textContent = formatItNumber(minutes);
+}
+
+tickTogetherCounter();
+setInterval(tickTogetherCounter, 1000);
+
 const letterPs = document.querySelectorAll('.letter-body p');
 const letterRo = new IntersectionObserver(entries => {
   entries.forEach(e => {
@@ -1674,7 +1709,7 @@ function setShown(el, show) {
 (function initHeartGame() {
   const MEDIA_BASE = 'ricordi/';
   const MANIFEST_URL = `${MEDIA_BASE}manifest.json`;
-  const PAIR_COUNT = 8;
+  const PAIR_COUNT = 9;
 
   const startBtn = document.getElementById('game-start-btn');
   const gameEl = document.getElementById('heart-game');
