@@ -369,6 +369,20 @@ body::-webkit-scrollbar{display:none}
   color:rgba(201,168,76,.45);
   transform:scale(1.06);
 }
+.r-title{
+  display:block;
+  font-family:'Cormorant Garamond',serif;
+  font-size:1.25rem;
+  font-style:italic;
+  font-weight:400;
+  color:var(--gold);
+  margin:0 0 10px;
+  line-height:1.3;
+  opacity:0;
+  transform:translateY(10px);
+  transition:opacity .65s ease .08s, transform .65s cubic-bezier(.22,1,.36,1) .08s;
+}
+.reason-card.visible .r-title{opacity:1;transform:none}
 .r-text{
   font-family:'Cormorant Garamond',serif;
   font-size:1.02rem;
@@ -972,7 +986,8 @@ body::-webkit-scrollbar{display:none}
   .letter-body p{opacity:1;transform:none}
   .letter-wrap .letter-greeting,
   .letter-wrap .letter-sig,
-  .reason-card .r-text{opacity:1;transform:none;filter:none}
+  .reason-card .r-text,
+  .reason-card .r-title{opacity:1;transform:none;filter:none}
   .ambient i{opacity:0;animation:none}
   .counter-fade{opacity:1}
   .memory-card-inner{
@@ -1120,39 +1135,48 @@ body::-webkit-scrollbar{display:none}
   <div class="reasons-grid">
     <div class="reason-card reveal">
       <span class="r-num">1</span>
-      <p class="r-text">La tua risata — quella vera, quella che non riesci a controllare — è la cosa più bella che conosco.</p>
+      <h3 class="r-title">Il tuo sguardo</h3>
+      <p class="r-text">Amo il modo in cui mi guardi e, come per magia, riesci a mettere in ordine tutto il caos che ho dentro. Con un solo sguardo fai in modo che tutto trovi il suo posto.</p>
     </div>
     <div class="reason-card reveal">
       <span class="r-num">2</span>
-      <p class="r-text">Come ti prendi cura delle persone che ami, con una delicatezza che non ha niente di scontato.</p>
+      <h3 class="r-title">La tua risata</h3>
+      <p class="r-text">Quella risata spontanea, vera, che riesce a tagliare il silenzio e a illuminare all'improvviso anche le mie giornate più storte e pesanti.</p>
     </div>
     <div class="reason-card reveal">
       <span class="r-num">3</span>
-      <p class="r-text">La tua curiosità — il modo in cui ti appassioni alle cose e le vivi completamente.</p>
+      <h3 class="r-title">Come affrontiamo i litigi</h3>
+      <p class="r-text">Amo la forza che abbiamo quando non ci capiamo. Anche dopo una discussione, anche quando l'orgoglio si fa sentire, alla fine scegliamo sempre di venirci incontro, di fare pace e di uscirne più uniti di prima.</p>
     </div>
     <div class="reason-card reveal">
       <span class="r-num">4</span>
-      <p class="r-text">La tua forza, anche nelle giornate in cui non te ne rendi conto nemmeno tu.</p>
+      <h3 class="r-title">La pazienza con cui mi ascolti</h3>
+      <p class="r-text">Amo come mi stai a sentire, anche quando magari mi perdo a parlarti dei miei progetti, di un server da configurare o di un lavoro da fare sulla Vespa. Il modo in cui supporti le cose che mi piacciono mi fa sentire sempre capito.</p>
     </div>
     <div class="reason-card reveal">
       <span class="r-num">5</span>
-      <p class="r-text">Come mi fai sentire a casa anche nel mezzo del caos.</p>
+      <h3 class="r-title">I nostri silenzi comodi</h3>
+      <p class="r-text">Amo il fatto che con te non ho l'ansia di dover riempire ogni vuoto. Stare semplicemente seduti in silenzio l'uno accanto all'altra è una delle sensazioni più sicure e belle del mondo.</p>
     </div>
     <div class="reason-card reveal">
       <span class="r-num">6</span>
-      <p class="r-text">I tuoi occhi quando parli di qualcosa che ti emoziona davvero.</p>
+      <h3 class="r-title">Le nostre stupidaggini</h3>
+      <p class="r-text">Amo le nostre conversazioni infinite e il fatto che riusciamo a ridere come matti per cose senza senso, continuando a prenderci in giro anche a distanza di ore.</p>
     </div>
     <div class="reason-card reveal">
       <span class="r-num">7</span>
-      <p class="r-text">Che sei sincera, anche quando è difficile — e questo vale più di tutto.</p>
+      <h3 class="r-title">La tua totale autenticità</h3>
+      <p class="r-text">Amo il fatto che sei semplicemente e meravigliosamente Ana. Senza filtri, senza finzioni. Ti amo per come sei realmente, con i tuoi pregi e i tuoi difetti, e non cambierei nulla.</p>
     </div>
     <div class="reason-card reveal">
       <span class="r-num">8</span>
-      <p class="r-text">Semplicemente: che esisti, e che hai scelto di essere qui con me.</p>
+      <h3 class="r-title">Il modo in cui rendi speciale la normalità</h3>
+      <p class="r-text">Non abbiamo sempre bisogno di fare grandi cose. Amo il fatto che con te anche i momenti più banali o noiosi diventano automaticamente la parte migliore della mia giornata.</p>
     </div>
     <div class="reason-card reveal">
       <span class="r-num">9</span>
-      <p class="r-text">Il modo in cui mi guardi — come se fossi esattamente dove devo essere.</p>
+      <h3 class="r-title">La nostra scelta quotidiana</h3>
+      <p class="r-text">Amo il fatto che in questi 9 mesi, tra alti e bassi, sorrisi e battibecchi, ci siamo scelti ogni singolo giorno. E che io, giorno dopo giorno, non ho mai smesso di innamorarmi di te.</p>
     </div>
   </div>
 
