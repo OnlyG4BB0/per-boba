@@ -805,15 +805,15 @@ body::-webkit-scrollbar{display:none}
   display:flex;gap:0;flex-wrap:wrap;justify-content:center;
   border-top:1px solid rgba(201,168,76,.1);
   border-bottom:1px solid rgba(201,168,76,.1);
-  width:100%;max-width:700px;
+  width:100%;max-width:880px;
   background:var(--ink);
   position:relative;
   z-index:1;
 }
 .c-item{
-  flex:1;min-width:120px;
+  flex:1;min-width:110px;
   text-align:center;
-  padding:36px 20px;
+  padding:36px 14px;
   border-right:1px solid rgba(201,168,76,.1);
   background:var(--ink);
 }
@@ -821,12 +821,22 @@ body::-webkit-scrollbar{display:none}
 .c-num{
   display:block;
   font-family:'Cormorant Garamond',serif;
-  font-size:clamp(2.8rem,7vw,5rem);
+  font-size:clamp(2.2rem,5.5vw,4.4rem);
   font-weight:300;
   color:var(--cream);
   line-height:1.2;
   padding:.06em 0;
   min-height:1.2em;
+  overflow:hidden;
+  position:relative;
+}
+.c-num.is-tick{
+  animation:numTick .55s cubic-bezier(.22,1,.36,1);
+}
+@keyframes numTick{
+  0%{opacity:.25;transform:translateY(18px);filter:blur(2px)}
+  55%{opacity:1;filter:blur(0)}
+  100%{opacity:1;transform:translateY(0);filter:blur(0)}
 }
 .c-unit{
   display:block;
@@ -900,7 +910,12 @@ body::-webkit-scrollbar{display:none}
     border-bottom:1px solid rgba(201,168,76,.1);
   }
   .c-item:nth-child(odd){border-right:1px solid rgba(201,168,76,.1)}
-  .c-item:nth-last-child(-n+2){border-bottom:none}
+  .c-item:last-child{
+    border-bottom:none;
+    grid-column:1 / -1;
+  }
+  .c-item:nth-child(3),
+  .c-item:nth-child(4){border-bottom:1px solid rgba(201,168,76,.1)}
   .c-num{font-size:clamp(2rem,9vw,3.2rem)}
   .c-unit{letter-spacing:.22em;font-size:.52rem}
 
@@ -969,6 +984,9 @@ body::-webkit-scrollbar{display:none}
   .memory-card{
     animation-duration:.55s!important;
   }
+  .c-num.is-tick{
+    animation-duration:.55s!important;
+  }
 }
 </style>
 </head>
@@ -1027,23 +1045,27 @@ body::-webkit-scrollbar{display:none}
     <i>♥</i><i>✦</i><i>♥</i><i>✦</i><i>♥</i><i>✦</i>
   </div>
 
-  <!-- Counter (live) -->
+  <!-- Counter (live + animato) -->
   <div class="counter-strip counter-fade" id="together-counter" aria-live="polite">
     <div class="c-item">
-      <span class="c-num" id="count-months">9</span>
+      <span class="c-num" id="count-months">0</span>
       <span class="c-unit">Mesi</span>
     </div>
     <div class="c-item">
-      <span class="c-num" id="count-days">—</span>
+      <span class="c-num" id="count-days">0</span>
       <span class="c-unit">Giorni</span>
     </div>
     <div class="c-item">
-      <span class="c-num" id="count-hours">—</span>
+      <span class="c-num" id="count-hours">0</span>
       <span class="c-unit">Ore</span>
     </div>
     <div class="c-item">
-      <span class="c-num" id="count-minutes">—</span>
+      <span class="c-num" id="count-minutes">0</span>
       <span class="c-unit">Minuti</span>
+    </div>
+    <div class="c-item">
+      <span class="c-num" id="count-seconds">0</span>
+      <span class="c-unit">Secondi</span>
     </div>
   </div>
 
@@ -1584,6 +1606,7 @@ if (counterStrip) {
     entries.forEach(e => {
       if (e.isIntersecting) {
         e.target.classList.add('visible');
+        startTogetherCounter();
         counterRo.unobserve(e.target);
       }
     });
@@ -1591,8 +1614,11 @@ if (counterStrip) {
   counterRo.observe(counterStrip);
 }
 
-// Contatori in tempo reale — data di inizio relazione
+// Contatori animati in tempo reale — data di inizio relazione
 const TOGETHER_SINCE = new Date('2025-10-17T00:00:00');
+const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+let togetherCounterStarted = false;
+let togetherTickTimer = null;
 
 function formatItNumber(n) {
   return Math.max(0, Math.floor(n)).toLocaleString('it-IT');
@@ -1604,27 +1630,103 @@ function monthsTogether(from, to) {
   return Math.max(0, months);
 }
 
+function getTogetherStats(now = new Date()) {
+  const ms = Math.max(0, now - TOGETHER_SINCE);
+  return {
+    months: monthsTogether(TOGETHER_SINCE, now),
+    days: Math.floor(ms / 86400000),
+    hours: Math.floor(ms / 3600000),
+    minutes: Math.floor(ms / 60000),
+    seconds: Math.floor(ms / 1000),
+  };
+}
+
+function setCounterValue(el, value, { animate = true } = {}) {
+  if (!el) return;
+  const next = formatItNumber(value);
+  if (el.dataset.value === next) return;
+  el.dataset.value = next;
+  el.textContent = next;
+  if (!animate || prefersReducedMotion) return;
+  el.classList.remove('is-tick');
+  void el.offsetWidth;
+  el.classList.add('is-tick');
+}
+
+function animateCountUp(el, target, duration, delay = 0) {
+  return new Promise((resolve) => {
+    if (!el) {
+      resolve();
+      return;
+    }
+    if (prefersReducedMotion || duration <= 0) {
+      setCounterValue(el, target, { animate: false });
+      resolve();
+      return;
+    }
+    const startAt = performance.now() + delay;
+    function frame(now) {
+      if (now < startAt) {
+        requestAnimationFrame(frame);
+        return;
+      }
+      const t = Math.min(1, (now - startAt) / duration);
+      const eased = 1 - (1 - t) ** 3;
+      el.textContent = formatItNumber(Math.round(target * eased));
+      if (t < 1) {
+        requestAnimationFrame(frame);
+        return;
+      }
+      el.dataset.value = formatItNumber(target);
+      el.classList.remove('is-tick');
+      void el.offsetWidth;
+      el.classList.add('is-tick');
+      resolve();
+    }
+    requestAnimationFrame(frame);
+  });
+}
+
 function tickTogetherCounter() {
+  const stats = getTogetherStats();
+  setCounterValue(document.getElementById('count-months'), stats.months);
+  setCounterValue(document.getElementById('count-days'), stats.days);
+  setCounterValue(document.getElementById('count-hours'), stats.hours);
+  setCounterValue(document.getElementById('count-minutes'), stats.minutes);
+  setCounterValue(document.getElementById('count-seconds'), stats.seconds);
+}
+
+async function startTogetherCounter() {
+  if (togetherCounterStarted) return;
+  togetherCounterStarted = true;
+
+  const stats = getTogetherStats();
   const monthsEl = document.getElementById('count-months');
   const daysEl = document.getElementById('count-days');
   const hoursEl = document.getElementById('count-hours');
   const minutesEl = document.getElementById('count-minutes');
-  if (!monthsEl || !daysEl || !hoursEl || !minutesEl) return;
+  const secondsEl = document.getElementById('count-seconds');
 
-  const now = new Date();
-  const ms = Math.max(0, now - TOGETHER_SINCE);
-  const days = Math.floor(ms / 86400000);
-  const hours = Math.floor(ms / 3600000);
-  const minutes = Math.floor(ms / 60000);
+  await Promise.all([
+    animateCountUp(monthsEl, stats.months, 1100, 0),
+    animateCountUp(daysEl, stats.days, 1400, 80),
+    animateCountUp(hoursEl, stats.hours, 1600, 140),
+    animateCountUp(minutesEl, stats.minutes, 1800, 200),
+    animateCountUp(secondsEl, stats.seconds, 2000, 260),
+  ]);
 
-  monthsEl.textContent = formatItNumber(monthsTogether(TOGETHER_SINCE, now));
-  daysEl.textContent = formatItNumber(days);
-  hoursEl.textContent = formatItNumber(hours);
-  minutesEl.textContent = formatItNumber(minutes);
+  tickTogetherCounter();
+  togetherTickTimer = setInterval(tickTogetherCounter, 1000);
 }
 
-tickTogetherCounter();
-setInterval(tickTogetherCounter, 1000);
+// Se la sezione è già in viewport al load, parti subito
+if (counterStrip) {
+  const rect = counterStrip.getBoundingClientRect();
+  if (rect.top < window.innerHeight && rect.bottom > 0) {
+    counterStrip.classList.add('visible');
+    startTogetherCounter();
+  }
+}
 
 const letterPs = document.querySelectorAll('.letter-body p');
 const letterRo = new IntersectionObserver(entries => {
